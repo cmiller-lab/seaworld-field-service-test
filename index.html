@@ -3741,7 +3741,7 @@ loadIncidentDraft();updateIncidentTimer();setInterval(updateIncidentTimer,1000);
 
   if('caches' in window){
     caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(key){return key.startsWith('seaworld-chemistry-console-field-service-test-') && key!=='seaworld-chemistry-console-field-service-test-v3';}).map(function(key){return caches.delete(key);}));
+      return Promise.all(keys.filter(function(key){return key.startsWith('seaworld-chemistry-console-field-service-test-') && key!=='seaworld-chemistry-console-field-service-test-v4';}).map(function(key){return caches.delete(key);}));
     }).then(function(){
       setText('versionUpdateStatus','Version 15.11 active • old caches cleared');
     }).catch(function(){

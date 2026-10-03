@@ -16,3 +16,10 @@ Four home tasks, persistent bottom navigation, searchable pool context shared ac
 
 ## Validation
 Syntax and DOM tests exercise navigation, selection, measurement validation, feeder write acknowledgements and offline handling with mocked requests. Production verification uses read-only queries; no fabricated production records are created.
+
+## Feeder cleaning workflow
+The feeder screen now uses append-only `feeder_activity` events in the same Supabase project. The 65-feeder inventory has monthly completion, last-cleaned dates across months, property and selected-pool filters, Remaining / Feeding Down / Ready / Completed queues, daily activity reports and cleaning history. Pending feed-down carries into the next month; cleaning counts in its actual calendar month (America/New_York). Starting another feed-down preserves completed history. Corrections require a reason and retain the original event. Technician identity is visible and required. Saving requires connectivity; retry request IDs prevent duplicate events.
+
+The monthly `feeder_cleanings` snapshots remain compatible with the original app. A database trigger captures future changes made by that app. Existing surviving snapshot timestamps were imported and labelled; overwritten earlier actions cannot be recovered. `database/feeder-activity.sql` documents the one-time additive migration already applied to the shared project; do not rerun it against that project.
+
+Validation: mocked DOM checks cover queues, 65-feeder inventory, pool context, cross-month dates, repeated feed-down, corrections, attribution and daily activity. Transactional database tests cover anon-role RPC saves, carryover, request deduplication and immutable history, then roll back all verification records.
