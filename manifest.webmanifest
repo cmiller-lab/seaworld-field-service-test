@@ -1,13 +1,13 @@
 {
   "id": "./field-test",
-  "name": "SeaWorld Field Service TEST",
-  "short_name": "SW Field Test",
+  "name": "SeaWorld Field Service",
+  "short_name": "SW Field",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#020b16",
   "theme_color": "#041b3d",
-  "description": "Field technician navigation testing app. Local test records only.",
+  "description": "Field service tools with shared Supabase calibration and feeder logs.",
   "icons": [
     {
       "src": "icon-192.png",

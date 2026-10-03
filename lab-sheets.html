@@ -93,7 +93,7 @@ h1{font-size:clamp(25px,6vw,38px);margin:5px 0 6px}
 .photo-placeholder{text-align:center;color:var(--muted);max-width:420px;line-height:1.5}
 .footer{margin-top:14px;text-align:center;color:#64748b;font-size:12px}
 </style>
-</head>
+<link rel="stylesheet" href="field-ui.css"><style>.hero{padding:14px!important;border-radius:12px!important}.hero h1{font-size:25px!important}.hero p{font-size:14px}.field-bottom a{min-height:60px;text-align:center;text-decoration:none;color:#a4b7ca;padding:8px;font-weight:700;font-size:12px}.field-bottom a span{display:block;font-size:23px;margin-bottom:5px}</style></head>
 <body>
 <main class="shell">
   <section class="hero">
@@ -288,6 +288,6 @@ h1{font-size:clamp(25px,6vw,38px);margin:5px 0 6px}
   if (!config.demoMode && config.refreshIntervalMs > 0) setInterval(load, config.refreshIntervalMs);
 })();
 </script>
-</body>
+<nav class="field-bottom" aria-label="Main navigation"><a href="index.html#home"><span>⌂</span>Home</a><a href="index.html#calculate"><span>⚗</span>Calculate</a><a href="index.html#calibration"><span>◴</span>Calibration</a><a href="index.html#feeders"><span>▤</span>Feeders</a></nav></body>
 </html>
 

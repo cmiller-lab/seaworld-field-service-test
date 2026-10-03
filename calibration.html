@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<script src="test-data.js"></script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f14" />
@@ -169,13 +169,13 @@ nav button{border:1px solid transparent;border-radius:9px;min-height:44px;color:
 @media(max-width:600px){nav{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-v6-btn,.fc-v6-level{font-size:9px}.fc-v6-id small{font-size:8px}.fc-v6-btn small{font-size:7px}}
 </style><style>
 #selectedPoolPill{display:none}#calibrationPoolSelector{display:none}nav{margin-top:0}nav button[data-view="feeders"]{display:none}nav{grid-template-columns:repeat(3,minmax(0,1fr))}body.feeder-view nav{display:none}.app{padding-bottom:10px}.card{padding:16px}.section-title{font-size:18px}label{font-size:14px}.btn{min-height:56px;font-size:17px}.fc-v6-cols{display:none}.fc-v6-row{display:flex;flex-wrap:wrap;gap:9px;padding:14px}.fc-v6-id{width:100%}.fc-v6-id strong{font-size:20px}.fc-v6-id small{font-size:12px}.fc-v6-btn{flex:1;min-width:90px;font-size:14px;min-height:50px}.fc-v6-btn small{font-size:10px}.fc-v6-level{width:85px;font-size:13px;min-height:50px}.fc-v6-prop-head{font-size:17px;padding:14px}.fc-last-refresh{font-size:12px}.toast{max-width:90%;white-space:normal}
-</style></head>
+</style><style>#fcShareStatus{display:none}.version-badge{display:none}.fc-v6-row{border-radius:12px;margin:10px;border:1px solid var(--line)}.fc-v6-id{display:flex;justify-content:space-between;align-items:center;gap:10px}.fc-v6-id small{max-width:65%;text-align:right}</style></head>
 <body>
 <div class="app">
   <header>
     <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v6.2</span></div>
     <div class="subrow">
-      <span class="pill local">LOCAL TEST MODE</span>
+      <span class="pill local">Connecting…</span>
       <span class="pill" id="selectedPoolPill">No pool selected</span>
     </div>
   </header>
@@ -399,15 +399,15 @@ function nowLocalInput(){
 $("observedAt").value=nowLocalInput();
 
 function loadPrefs(){
-  $("tech").value=localStorage.getItem("fieldtest.pcl.tech")||"";
+  $("tech").value=localStorage.getItem("fieldlive.pcl.tech")||"";
 }
 function initSelectors(){
   const props=[...new Set(POOLS.map(p=>p.property))];
   $("property").innerHTML=props.map(p=>`<option>${p}</option>`).join("");
-  const savedProp=localStorage.getItem("fieldtest.pcl.property");
+  const savedProp=localStorage.getItem("fieldlive.pcl.property");
   if(savedProp && props.includes(savedProp)) $("property").value=savedProp;
   fillPools();
-  const savedPool=localStorage.getItem("fieldtest.pcl.pool");
+  const savedPool=localStorage.getItem("fieldlive.pcl.pool");
   if(savedPool && [...$("pool").options].some(o=>o.value===savedPool)) $("pool").value=savedPool;
   updatePoolPill();
 }
@@ -423,8 +423,8 @@ function updatePoolPill(){
   $("selectedPoolPill").textContent=p?`${p.property} • ${p.id}${p.name!==p.id?` ${p.name}`:""}`:"No pool selected";
   renderAll();
 }
-$("property").addEventListener("change",()=>{localStorage.setItem("fieldtest.pcl.property",$("property").value);fillPools();localStorage.setItem("fieldtest.pcl.pool",$("pool").value);renderAll();});
-$("pool").addEventListener("change",()=>{localStorage.setItem("fieldtest.pcl.pool",$("pool").value);updatePoolPill();});
+$("property").addEventListener("change",()=>{localStorage.setItem("fieldlive.pcl.property",$("property").value);fillPools();localStorage.setItem("fieldlive.pcl.pool",$("pool").value);renderAll();});
+$("pool").addEventListener("change",()=>{localStorage.setItem("fieldlive.pcl.pool",$("pool").value);updatePoolPill();});
 
 function num(id){const v=parseFloat($(id).value);return Number.isFinite(v)?v:null}
 function deltaClass(abs, type){
@@ -442,17 +442,21 @@ function updateDeltas(){
 ["controllerPh","testPh","controllerFc","testFc"].forEach(id=>$(id).addEventListener("input",updateDeltas));
 $("calPerformed").addEventListener("change",()=>$("calFields").classList.toggle("hidden",!$("calPerformed").checked));
 
-function getRecords(){try{return JSON.parse(localStorage.getItem("fieldtest.pcl.records")||"[]")}catch{return []}}
-function saveRecords(r){localStorage.setItem("fieldtest.pcl.records",JSON.stringify(r))}
+function getRecords(){try{return JSON.parse(localStorage.getItem("fieldlive.pcl.records")||"[]")}catch{return []}}
+function saveRecords(r){localStorage.setItem("fieldlive.pcl.records",JSON.stringify(r))}
 function uuid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
 
 function validate(){
+  if(!$("tech").value.trim() || !$("observedAt").value || !Number.isFinite(new Date($("observedAt").value).getTime()))return false;
+  for(const id of ["controllerPh","testPh","controllerFc","testFc","orpMv","postPh","postFc"]){const el=$(id);if(el.value && !el.checkValidity())return false;}
+  if($("phCal").checked && num("postPh")===null)return false;
+  if($("fcCal").checked && num("postFc")===null)return false;
   const required=["controllerPh","testPh","controllerFc","testFc","orpMv"];
   for(const id of required){if(num(id)===null) return false}
   return !!selectedPool();
 }
 $("saveBtn").addEventListener("click",()=>{
-  if(!validate()){toast("Complete all required readings.");return}
+  if(!validate()){toast("Enter technician, valid date/time, and all required readings.");return}
   const p=selectedPool();
   const rec={
     id:uuid(),poolKey:p.key,property:p.property,poolId:p.id,poolName:p.name,
@@ -463,7 +467,7 @@ $("saveBtn").addEventListener("click",()=>{
     postPh:num("postPh"),postFc:num("postFc"),notes:$("notes").value.trim()
   };
   const all=getRecords(); all.push(rec); saveRecords(all);
-  localStorage.setItem("fieldtest.pcl.tech",rec.technician);
+  localStorage.setItem("fieldlive.pcl.tech",rec.technician);
   ["controllerPh","testPh","controllerFc","testFc","orpMv","postPh","postFc"].forEach(id=>$(id).value="");
   $("notes").value="";$("calPerformed").checked=false;$("calFields").classList.add("hidden");$("phCal").checked=false;$("fcCal").checked=false;
   $("observedAt").value=nowLocalInput(); updateDeltas(); renderAll(); toast("Spot check saved locally.");
@@ -474,10 +478,11 @@ function poolRecords(){
   return getRecords().filter(r=>r.poolKey===key).sort((a,b)=>new Date(b.observedAt)-new Date(a.observedAt));
 }
 function fmtDate(s){return new Date(s).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}
+function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function recCard(r,showDelete=false){
   const ph=r.controllerPh-r.testPh,fc=r.controllerFc-r.testFc;
   return `<div class="rowcard">
-    <div class="rowtop"><div><div class="rowtitle">${fmtDate(r.observedAt)}</div><div class="rowmeta">${r.technician||"Unknown tech"}${r.calPerformed ? ` • CALIBRATED${r.phCal||r.fcCal ? ` (${[r.phCal?"pH":"",r.fcCal?"FC":""].filter(Boolean).join(" + ")})` : ""}` : ""}</div></div>
+    <div class="rowtop"><div><div class="rowtitle">${fmtDate(r.observedAt)}</div><div class="rowmeta">${escapeHtml(r.technician||"Unknown tech")}${r.calPerformed ? ` • CALIBRATED${r.phCal||r.fcCal ? ` (${[r.phCal?"pH":"",r.fcCal?"FC":""].filter(Boolean).join(" + ")})` : ""}` : ""}</div></div>
     ${showDelete?`<button class="danger" onclick="deleteRec('${r.id}')">Delete</button>`:""}</div>
     <div class="metrics">
       <div class="metricbox">pH Ctrl/Test<b>${r.controllerPh.toFixed(2)} / ${r.testPh.toFixed(2)}</b><span>Δ ${ph>=0?"+":""}${ph.toFixed(2)}</span></div>
@@ -486,10 +491,13 @@ function recCard(r,showDelete=false){
     </div>${calibrationTargetLine(r)}
   </div>`;
 }
-window.deleteRec=(id)=>{
-  if(!confirm("Delete this spot check?")) return;
-  saveRecords(getRecords().filter(r=>r.id!==id)); renderAll(); toast("Record deleted.");
-}
+window.deleteRec=async(id)=>{
+ if(!confirm("Delete this spot check from the shared log?"))return;
+ if(!navigator.onLine){toast("Connect before deleting a shared check.");return;}
+ if(pclSyncing){toast("Wait for sync to finish, then retry.");return;}
+ pclSyncing=true;
+ try{const response=await fetch(`${PCL_SB_URL}/rest/v1/spot_checks?id=eq.${encodeURIComponent(id)}`,{method:"DELETE",headers:pclHeaders()});if(!response.ok)throw new Error(await response.text());const db=await pclDB();await new Promise((resolve,reject)=>{const tx=db.transaction("records","readwrite");tx.objectStore("records").delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});localStorage.setItem("fieldlive.pcl.records",JSON.stringify(getRecords().filter(r=>r.id!==id)));renderAll();toast("Shared record deleted.");}catch(e){console.error(e);toast("Delete failed — record retained.");}finally{pclSyncing=false;pclSetBadge()}
+};
 function median(arr){
   if(!arr.length)return null; const a=[...arr].sort((x,y)=>x-y),m=Math.floor(a.length/2);
   return a.length%2?a[m]:(a[m-1]+a[m])/2;
@@ -568,11 +576,11 @@ loadPrefs();initSelectors();renderAll();
    localStorage remains only as a fast UI mirror for the existing prototype UI. */
 const PCL_SB_URL="https://eseqjmcsdwqyohmoabnq.supabase.co";
 const PCL_SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZXFqbWNzZHdxeW9obW9hYm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MjUxMTIsImV4cCI6MjEwNDIwMTExMn0.PIqeyV12we4gCuyFXYwcN9-tCgc-rIhYud2DuUhxqlQ";
-let pclSyncing=false;
+let pclSyncing=false, pclSyncFailed=false;
 
 function pclDB(){
   return new Promise((resolve,reject)=>{
-    const q=indexedDB.open("fieldTestCalibrationDB",1);
+    const q=indexedDB.open("fieldServiceCalibrationLiveDB",1);
     q.onupgradeneeded=()=>{
       const db=q.result;
       if(!db.objectStoreNames.contains("records")){
@@ -630,7 +638,7 @@ function pclSetBadge(){
   pclAll().then(rows=>{
     const n=rows.filter(r=>r.syncStatus!=="synced").length;
     el.textContent=!navigator.onLine?`OFFLINE${n?` • ${n} WAITING`:""}`:
-      pclSyncing?`SAVING${n?` • ${n}`:""}`:n?`TEST • ${n} PENDING`:"TEST • SAVED ON DEVICE";
+      pclSyncing?`SYNCING${n?` • ${n}`:""}`:pclSyncFailed?"SYNC UNAVAILABLE • SAVED ON DEVICE":n?`ONLINE • ${n} PENDING`:"ONLINE • SYNCED";
   }).catch(()=>{});
 }
 async function pclPush(r){
@@ -648,35 +656,35 @@ async function pclPull(){
 }
 async function pclRefreshMirror(){
   const rows=(await pclAll()).sort((a,b)=>new Date(a.observedAt)-new Date(b.observedAt));
-  localStorage.setItem("fieldtest.pcl.records",JSON.stringify(rows));
+  localStorage.setItem("fieldlive.pcl.records",JSON.stringify(rows));
   if(typeof renderAll==="function") renderAll();
 }
 async function pclSync(){
   if(pclSyncing||!navigator.onLine){pclSetBadge();return}
-  pclSyncing=true;pclSetBadge();
+  pclSyncing=true;pclSyncFailed=false;pclSetBadge();
   try{
     const rows=await pclAll();
     for(const r of rows.filter(x=>x.syncStatus!=="synced")){
-      try{ await pclPush(r); }catch(e){ r.syncStatus="error"; await pclPut(r); console.error("Sync push",e); }
+      try{ await pclPush(r); }catch(e){ r.syncStatus="error"; await pclPut(r); pclSyncFailed=true;console.error("Sync push",e); }
     }
     await pclPull();
     await pclRefreshMirror();
-  }catch(e){console.error("Sync",e)}
+  }catch(e){pclSyncFailed=true;console.error("Sync",e)}
   pclSyncing=false;pclSetBadge();
 }
 
 /* Replace the prototype save routine: UI mirror + IndexedDB first, cloud second. */
 const pclOriginalSaveRecords=saveRecords;
 saveRecords=function(rows){
-  localStorage.setItem("fieldtest.pcl.records",JSON.stringify(rows));
+  localStorage.setItem("fieldlive.pcl.records",JSON.stringify(rows));
   (async()=>{
     const existing=new Map((await pclAll()).map(r=>[r.id,r]));
     for(const row of rows){
       const prior=existing.get(row.id);
       if(prior && prior.syncStatus==="synced") row.syncStatus="synced";
       else row.syncStatus=row.syncStatus||"pending";
-      row.deviceId=row.deviceId||localStorage.getItem("fieldtest.pcl.deviceId")||(crypto.randomUUID?crypto.randomUUID():String(Date.now()));
-      localStorage.setItem("fieldtest.pcl.deviceId",row.deviceId);
+      row.deviceId=row.deviceId||localStorage.getItem("fieldlive.pcl.deviceId")||(crypto.randomUUID?crypto.randomUUID():String(Date.now()));
+      localStorage.setItem("fieldlive.pcl.deviceId",row.deviceId);
       await pclPut(row);
     }
     pclSetBadge(); pclSync();
@@ -686,7 +694,7 @@ saveRecords=function(rows){
 /* On first v2 load, migrate any surviving v1 local records into IndexedDB, then sync. */
 (async()=>{
   try{
-    const legacy=JSON.parse(localStorage.getItem("fieldtest.pcl.records")||"[]");
+    const legacy=JSON.parse(localStorage.getItem("fieldlive.pcl.records")||"[]");
     const current=new Map((await pclAll()).map(r=>[r.id,r]));
     for(const r of legacy){
       if(!current.has(r.id)){r.syncStatus="pending";await pclPut(r);}
@@ -713,20 +721,20 @@ const FC_LEVELS=["100%","75%","50%","25%","Empty"];
 const FC={month:new Date().toISOString().slice(0,7),rows:[],property:"All"};
 function fcInv(){return FC_FEEDERS.flatMap(([property,pool,pool_name,n])=>Array.from({length:n},(_,i)=>{let letter=String.fromCharCode(65+i);return {feeder_key:`${property}|${pool}|${letter}`,property,pool,pool_name,letter,feeder_id:`${pool}-${letter}`}}))}
 function fcRow(k){return FC.rows.find(r=>r.feeder_key===k)}
-function fcTech(){return null}
+function fcTech(){return $("tech").value.trim()||localStorage.getItem("fieldlive.pcl.tech")||""}
 function fcHeaders(extra={}){return {"apikey":PCL_SB_KEY,"Authorization":`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra}}
 function fcFmt(t){return t?new Date(t).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):""}
 function fcElapsed(a,b){if(!a||!b)return"";let d=new Date(b)-new Date(a);if(d<0)return"";let h=Math.floor(d/36e5),m=Math.round((d%36e5)/6e4);return h?`${h}h ${m}m`:`${m}m`}
 async function fcLoad(){
  const status=document.getElementById("fcLastRefresh");
- if(status){status.textContent="Loading local test data…";status.classList.remove("ok");status.classList.add("refreshing")}
+ if(status){status.textContent="Refreshing shared records…";status.classList.remove("ok");status.classList.add("refreshing")}
  try{
    let a=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?month=eq.${FC.month}&select=*`,{headers:fcHeaders(),cache:"no-store"});
    if(!a.ok) throw new Error(await a.text());
    FC.rows=await a.json();
    fcRender();
    if(status){
-     status.textContent=`Local data refreshed ${new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"})}`;
+     status.textContent=`Shared data refreshed ${new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"})}`;
      status.classList.remove("refreshing");status.classList.add("ok");
    }
  }catch(e){
@@ -738,10 +746,14 @@ async function fcLoad(){
  }
 }
 
-async function fcSave(x,patch){let r=fcRow(x.feeder_key)||{id:crypto.randomUUID(),month:FC.month,feeder_key:x.feeder_key,property:x.property,pool_id:x.pool,pool_name:x.pool_name,feeder_letter:x.letter,session:1};Object.assign(r,patch);let resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?on_conflict=month,feeder_key`,{method:"POST",headers:fcHeaders({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});if(!resp.ok)return toast("Could not save.");let saved=(await resp.json())[0],i=FC.rows.findIndex(v=>v.feeder_key===x.feeder_key);if(i>=0)FC.rows[i]=saved;else FC.rows.push(saved);fcRender()}
-window.fcV6Feed=async k=>{let t=null;let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.feed_down_at&&!r?.cleaned_at){if(!confirm(`Clear feed-down for ${x.feeder_id}?`))return;return fcSave(x,{feed_down_at:null,feed_down_by:null,feed_level:null,level_updated_at:null})}await fcSave(x,{feed_down_at:new Date().toISOString(),feed_down_by:t,feed_level:"100%",level_updated_at:new Date().toISOString(),cleaned_at:null,cleaned_by:null})}
-window.fcV6Clean=async k=>{let t=null;let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.cleaned_at){if(!confirm(`Clear cleaned status for ${x.feeder_id}?`))return;return fcSave(x,{cleaned_at:null,cleaned_by:null})}let now=new Date().toISOString(),patch={cleaned_at:now,cleaned_by:t,feed_level:"Empty",level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
-window.fcV6Level=async(k,v)=>{if(!v)return;let t=null;let x=fcInv().find(q=>q.feeder_key===k),r=fcRow(k),now=new Date().toISOString(),patch={feed_level:v,level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
+async function fcSave(x,patch){
+ if(!navigator.onLine){toast("Offline — feeder update requires a connection.");return;}
+ const r={...(fcRow(x.feeder_key)||{id:crypto.randomUUID(),month:FC.month,feeder_key:x.feeder_key,property:x.property,pool_id:x.pool,pool_name:x.pool_name,feeder_letter:x.letter,session:1}),...patch};
+ try{const resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?on_conflict=month,feeder_key`,{method:"POST",headers:fcHeaders({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});if(!resp.ok)throw new Error(await resp.text());const saved=(await resp.json())[0];if(!saved)throw new Error("No saved row returned");const i=FC.rows.findIndex(v=>v.feeder_key===x.feeder_key);if(i>=0)FC.rows[i]=saved;else FC.rows.push(saved);fcRender();toast("Saved to shared log.");}catch(e){console.error("Feeder save",e);toast("Save failed — update was not recorded. Retry.");}
+}
+window.fcV6Feed=async k=>{let t=fcTech();if(!t){t=prompt("Technician name for this update");if(!t?.trim())return;t=t.trim();$("tech").value=t;localStorage.setItem("fieldlive.pcl.tech",t)}let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.feed_down_at&&!r?.cleaned_at){if(!confirm(`Clear feed-down for ${x.feeder_id}?`))return;return fcSave(x,{feed_down_at:null,feed_down_by:null,feed_level:null,level_updated_at:null})}await fcSave(x,{feed_down_at:new Date().toISOString(),feed_down_by:t,feed_level:"100%",level_updated_at:new Date().toISOString(),cleaned_at:null,cleaned_by:null})}
+window.fcV6Clean=async k=>{let t=fcTech();if(!t){t=prompt("Technician name for this update");if(!t?.trim())return;t=t.trim();$("tech").value=t;localStorage.setItem("fieldlive.pcl.tech",t)}let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.cleaned_at){if(!confirm(`Clear cleaned status for ${x.feeder_id}?`))return;return fcSave(x,{cleaned_at:null,cleaned_by:null})}let now=new Date().toISOString(),patch={cleaned_at:now,cleaned_by:t,feed_level:"Empty",level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
+window.fcV6Level=async(k,v)=>{if(!v)return;let t=fcTech();if(!t){t=prompt("Technician name for this update");if(!t?.trim())return;t=t.trim();$("tech").value=t;localStorage.setItem("fieldlive.pcl.tech",t)}let x=fcInv().find(q=>q.feeder_key===k),r=fcRow(k),now=new Date().toISOString(),patch={feed_level:v,level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
 window.fcNote=k=>{let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k),v=prompt(`Note for ${x.feeder_id}`,r?.note||"");if(v!==null)fcSave(x,{note:v.trim()})}
 function fcStatusReport(){let a=fcInv().map(x=>({...x,r:fcRow(x.feeder_key)||{}})),feed=a.filter(x=>x.r.feed_down_at&&!x.r.cleaned_at),clean=a.filter(x=>x.r.cleaned_at),L=["PULSAR FEEDER STATUS",new Date().toLocaleString([]),""];function sec(title,rows,done){if(!rows.length)return;L.push(title);["Aquatica","SeaWorld","Discovery Cove"].forEach(p=>{let q=rows.filter(x=>x.property===p);if(!q.length)return;L.push(p.toUpperCase());q.forEach(x=>{let r=x.r,d=fcElapsed(r.feed_down_at,done?r.cleaned_at:new Date().toISOString());L.push(`${done?"✓":"•"} ${x.feeder_id} — ${done?`Cleaned ${fcFmt(r.cleaned_at)}`:`${r.feed_level||"100%"} • ${fcFmt(r.feed_down_at)}`}${d?` • ${d}`:""}`);if(r.note?.trim())L.push(`  Note: ${r.note.trim()}`)});L.push("")})}sec("FEEDING DOWN",feed,false);sec("CLEANED",clean,true);L.push("STATUS",`${feed.length} feeding down`,`${clean.length} cleaned`);return L.join("\n").trim()}
 async function fcShareStatus(){let text=fcStatusReport();if(navigator.share){try{await navigator.share({title:"Pulsar Feeder Status",text})}catch(e){}}else{await navigator.clipboard.writeText(text);toast("Status report copied.")}}
@@ -781,7 +793,7 @@ async function fcLoadHistory(){
   if(!a.ok)throw new Error(await a.text()); let rows=await a.json();
   if(!rows.length){box.innerHTML='<div class="muted">No completed feeder cleanings recorded yet.</div>';return}
   let groups={}; rows.forEach(r=>{let k=new Date(r.cleaned_at).toLocaleString([],{month:"long",year:"numeric"});(groups[k]??=[]).push(r)});
-  box.innerHTML=Object.entries(groups).map(([month,rs])=>`<div class="fc-history-month"><h3>${month}</h3>${rs.map(r=>{let dur=fcElapsed(r.feed_down_at,r.cleaned_at);return `<div class="fc-history-row"><div><strong>${r.pool_id}-${r.feeder_letter}</strong><small>${r.property}${r.pool_name?` • ${r.pool_name}`:""}</small></div><div><strong>${fcFmt(r.cleaned_at)}</strong><small>${dur?`Feed-down ${dur}`:"No feed-down duration"}</small></div>${r.note?.trim()?`<div class="fc-history-note">${r.note}</div>`:""}</div>`}).join("")}</div>`).join("");
+  box.innerHTML=Object.entries(groups).map(([month,rs])=>`<div class="fc-history-month"><h3>${month}</h3>${rs.map(r=>{let dur=fcElapsed(r.feed_down_at,r.cleaned_at);return `<div class="fc-history-row"><div><strong>${r.pool_id}-${r.feeder_letter}</strong><small>${r.property}${r.pool_name?` • ${r.pool_name}`:""}</small></div><div><strong>${fcFmt(r.cleaned_at)}</strong><small>${dur?`Feed-down ${dur}`:"No feed-down duration"}</small></div>${r.note?.trim()?`<div class="fc-history-note">${escapeHtml(r.note)}</div>`:""}</div>`}).join("")}</div>`).join("");
  }catch(e){console.error(e);box.innerHTML='<div class="muted">Could not load cleaning history.</div>'}
 }
 function fcSetView(mode){
@@ -820,6 +832,10 @@ window.setFieldPool=function(property,id){
 ["property","pool"].forEach(id=>$(id).addEventListener("change",()=>{const p=selectedPool();if(p)parent.postMessage({type:"field-pool",property:p.property,id:p.id},location.origin)}));
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>parent.postMessage({type:"field-view",view:b.dataset.view},location.origin)));
 </script>
-</body>
+<script>
+const badge=document.querySelector('.pill.local');new MutationObserver(()=>parent.postMessage({type:'field-sync',status:badge.textContent},location.origin)).observe(badge,{childList:true,characterData:true,subtree:true});
+window.addEventListener('online',()=>{if(fcFeederViewVisible())fcRefreshShared()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pclSync()});
+</script></body>
 </html>
 

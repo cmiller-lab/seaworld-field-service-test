@@ -4,3 +4,5 @@ body{padding-bottom:calc(90px + env(safe-area-inset-bottom));font-size:16px}.wra
 @media(max-width:600px){.task-button{min-height:94px;padding:16px}.task-button strong{font-size:20px}.task-page h2{font-size:24px}.grid{grid-template-columns:1fr!important}.pool-context strong{font-size:14px}}
 
 .version-panel,.footer{display:none!important}
+
+.test-status{color:#91e5bb;border-color:#266c47;background:#0b281d;font-size:11px;max-width:48%;text-align:right}.pool-context{box-shadow:0 4px 14px #020b18}.field-bottom{box-shadow:0 -4px 18px #020b18}
