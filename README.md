@@ -3,7 +3,7 @@
 Independent interface in seaworld-field-service-test. The original apps are unchanged.
 
 ## Shared logging
-Calibration spot checks and feeder cleaning use the original Supabase project and tables: spot_checks and feeder_cleanings. New entries and deletions affect the shared data used by the original app. No database migration is required.
+Calibration spot checks and feeder cleaning use the original Supabase project and tables: spot_checks and feeder_cleanings. New entries and deletions affect the shared data used by the original app. The additive feeder activity migration is already applied.
 
 Spot checks save to a dedicated IndexedDB database first and sync when online. The header reports pending/offline/failed sync states. Feeder updates require a connection and show success only after the server confirms the row. Technician attribution is required for feed-down, levels and cleaning.
 
