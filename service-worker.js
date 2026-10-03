@@ -1,4 +1,4 @@
-const CACHE='seaworld-chemistry-console-field-service-test-v1';
+const CACHE='seaworld-chemistry-console-field-service-test-v2';
 const ASSETS=[
   './',
   './index.html',
@@ -29,7 +29,7 @@ self.addEventListener('install',event=>{
 self.addEventListener('activate',event=>{
   event.waitUntil(
     caches.keys().then(keys=>Promise.all(
-      keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))
+      keys.filter(key=>key.startsWith("seaworld-chemistry-console-field-service-test-")&&key!==CACHE).map(key=>caches.delete(key))
     ))
   );
   self.clients.claim();
