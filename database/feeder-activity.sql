@@ -93,11 +93,17 @@ begin
  elsif p_action='correction' then
   if nullif(trim(p_payload->>'reason'),'') is null then raise exception 'Correction reason required';end if;
   correction_id:=(p_payload->>'correction_of')::uuid;
-  select * into target from public.feeder_activity where id=correction_id and feeder_key=p_feeder_key and action='cleaned';
-  if target.id is null then raise exception 'Cleaning record not found';end if;
-  if exists(select 1 from public.feeder_activity where action='correction' and payload->>'correction_of'=target.id::text) then raise exception 'Cleaning already corrected';end if;
+  select * into target from public.feeder_activity where id=correction_id and feeder_key=p_feeder_key and action in ('cleaned','feed_down');
+  if target.id is null then raise exception 'Activity record not found';end if;
+  if exists(select 1 from public.feeder_activity where action='correction' and payload->>'correction_of'=target.id::text) then raise exception 'Activity already corrected';end if;
   perform set_config('app.feeder_skip_audit','yes',true);
-  update public.feeder_cleanings set cleaned_at=null,cleaned_by=null,updated_at=now() where id=target.source_row_id and cleaned_at=target.occurred_at;
+  if target.action='feed_down' then
+   if prior.feed_down_at is distinct from target.occurred_at or prior.cleaned_at is not null then raise exception 'Feed-down is no longer active';end if;
+   if exists(select 1 from public.feeder_activity where feeder_key=p_feeder_key and action in ('level','cleaned') and recorded_at>target.recorded_at) then raise exception 'Cannot undo feed-down after later level or cleaning work';end if;
+   update public.feeder_cleanings set feed_down_at=null,feed_down_by=null,feed_level=null,level_updated_at=null,updated_at=now() where feeder_key=p_feeder_key and feed_down_at=target.occurred_at and cleaned_at is null;
+  else
+   update public.feeder_cleanings set cleaned_at=null,cleaned_by=null,updated_at=now() where id=target.source_row_id and cleaned_at=target.occurred_at;
+  end if;
  end if;
  perform set_config('app.feeder_skip_audit','yes',true);
  if p_action<>'correction' then
