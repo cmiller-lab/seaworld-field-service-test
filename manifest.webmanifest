@@ -1,0 +1,23 @@
+{
+  "id": "./field-test",
+  "name": "SeaWorld Field Service TEST",
+  "short_name": "SW Field Test",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#020b16",
+  "theme_color": "#041b3d",
+  "description": "Field technician navigation testing app. Local test records only.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

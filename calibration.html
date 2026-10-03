@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script src="test-data.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Calibration &amp; Feeder Maintenance</title>
+  
+  <style>
+    :root{
+      --bg:#0b0f14;--panel:#121821;--panel2:#18212c;--line:#273241;--text:#edf3f8;
+      --muted:#94a3b8;--accent:#4da3ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .app{max-width:900px;margin:0 auto;padding:14px 14px 88px}
+    header{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 84%,transparent);padding:8px 0 12px}
+    h1{font-size:22px;margin:0 0 8px}
+    .subrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--panel)}
+    .pill.local{color:#ffd28a;border-color:#5b4316}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:12px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+    input,select,textarea,button{font:inherit}
+    input,select,textarea{width:100%;background:#0e141c;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:48px}
+    textarea{min-height:90px}
+    .section-title{font-size:14px;font-weight:700;margin:0 0 10px}
+    .measure-head,.measure-row{display:grid;grid-template-columns:1.05fr 1fr 1fr .8fr;gap:8px;align-items:center}
+    .measure-head{font-size:11px;color:var(--muted);padding:0 2px 6px}
+    .measure-row{margin-bottom:8px}
+    .measure-row .metric{font-weight:700}
+    .delta{display:flex;align-items:center;justify-content:center;min-height:48px;background:#0e141c;border:1px solid var(--line);border-radius:10px;font-variant-numeric:tabular-nums}
+    .delta.good{border-color:#1f6c39;color:#89e4a9}
+    .delta.warn{border-color:#775317;color:#ffd188}
+    .delta.bad{border-color:#7d2828;color:#ffabab}
+    .orp-row{display:grid;grid-template-columns:1.05fr 1fr 1fr .8fr;gap:8px;align-items:center}
+    .orp-row input{grid-column:2/3}
+    .btn{width:100%;border:0;border-radius:12px;padding:14px 16px;min-height:52px;font-weight:800}
+    .primary{background:var(--accent);color:white}
+    .secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+    .danger{background:#3a1515;color:#ffb3b3;border:1px solid #6c2424}
+    .hidden{display:none!important}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .kpi{background:#0e141c;border:1px solid var(--line);border-radius:10px;padding:10px}
+    .kpi .v{font-size:18px;font-weight:800}
+    .kpi .l{font-size:11px;color:var(--muted);margin-top:4px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+    .toolbar button{flex:1;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px}
+    .toolbar button.active{border-color:var(--accent);color:#b9dcff}
+    .history{display:grid;gap:8px}
+    .rowcard{border:1px solid var(--line);border-radius:10px;background:#0e141c;padding:10px}
+    .rowtop{display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .rowtitle{font-weight:700}
+    .rowmeta{font-size:11px;color:var(--muted)}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+    .metricbox{background:var(--panel2);padding:8px;border-radius:8px;font-size:12px}
+    .metricbox b{display:block;font-size:14px;margin-top:2px}
+    canvas{width:100%;height:300px;background:#0e141c;border:1px solid var(--line);border-radius:10px}
+    .insight{padding:12px;background:#0e141c;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+    details{margin-top:10px}
+    summary{cursor:pointer;color:#cbd5e1}
+    nav{position:fixed;bottom:0;left:0;right:0;background:rgba(10,14,20,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;z-index:10;padding:max(8px,env(safe-area-inset-bottom)) 8px 8px}
+    nav button{flex:1;background:none;color:var(--muted);border:0;padding:10px 4px;font-size:12px}
+    nav button.active{color:white;font-weight:800}
+    .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#17202b;color:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:999px;display:none;z-index:20}
+    .muted{color:var(--muted);font-size:12px}
+    @media(max-width:650px){
+      .grid2{grid-template-columns:1fr}
+      .kpis{grid-template-columns:1fr 1fr}
+      .measure-head,.measure-row,.orp-row{grid-template-columns:.9fr 1fr 1fr .75fr}
+      .app{padding-left:10px;padding-right:10px}
+    }
+  
+    header{padding-top:max(8px,env(safe-area-inset-top))}
+    .feeder-head,.modal-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .smallbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+    .session-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+    .session-tabs button{background:var(--panel2);color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:11px}
+    .session-tabs button.active{border-color:var(--accent);color:white}
+    .property-group{margin-top:14px}.property-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:800}
+    .feeder-pool{border:1px solid var(--line);border-radius:12px;background:#0e141c;margin-bottom:10px;overflow:hidden}
+    .feeder-pool-head{padding:10px 12px;border-bottom:1px solid var(--line);font-weight:800}
+    .feeder-item{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 12px;border-bottom:1px solid #202a37;align-items:center}
+    .feeder-item:last-child{border-bottom:0}.feeder-id{font-size:16px;font-weight:850}.feeder-sub{font-size:11px;color:var(--muted);margin-top:3px}
+    .feeder-state{display:flex;gap:6px;align-items:center}.statebtn{border-radius:9px;padding:8px 10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);min-width:88px}
+    .statebtn.done{border-color:#23623b;color:#9ae6b4}.statebtn.feed{border-color:#6b4a12;color:#ffd38a}.issue-dot{color:#ffd18a;font-weight:800}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+    .modal-sheet{width:min(900px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
+    .status-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.status-actions button{min-height:50px;border-radius:11px;border:1px solid var(--line);font-weight:800}
+    .feeder-note{margin-top:6px;padding:7px 9px;border-radius:8px;background:#2b2413;color:#ffd995;font-size:12px}
+    .feeder-kpis .v{font-size:20px}
+
+
+:root{--s1:#4da3ff;--s2:#b982ff}
+.feeder-item.session1{border-left:5px solid var(--s1)}
+.feeder-item.session2{border-left:5px solid var(--s2)}
+.session-badge{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:850;margin-left:7px}
+.session-badge.s1{border:1px solid var(--s1);color:#a9d4ff;background:rgba(77,163,255,.10)}
+.session-badge.s2{border:1px solid var(--s2);color:#d8baff;background:rgba(185,130,255,.10)}
+.session-tabs button[data-session="1"].active{border-color:var(--s1);box-shadow:inset 0 -3px 0 var(--s1)}
+.session-tabs button[data-session="2"].active{border-color:var(--s2);box-shadow:inset 0 -3px 0 var(--s2)}
+.team-update-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px}
+.btn.danger{background:#35191c;color:#ffb5ba;border:1px solid #7e3037}
+
+.app-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.app-title-row h1{margin-bottom:0}
+.version-badge{display:inline-flex;align-items:center;border:1px solid #4da3ff;background:rgba(77,163,255,.12);color:#a9d4ff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:850;letter-spacing:.03em}
+
+.fc-subtabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fc-subtabs button{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted)}.fc-subtabs button.active{color:#fff;border-color:var(--accent)}
+.fc-session-title{display:flex;align-items:center;justify-content:space-between}.fc-session-dot{width:14px;height:14px;border-radius:50%;background:var(--s1)}.fc-session-dot.s2{background:var(--s2)}
+.fc-overview-table{width:100%;border-collapse:collapse;margin-top:12px}.fc-overview-table th,.fc-overview-table td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.fc-overview-table th:last-child,.fc-overview-table td:last-child{text-align:right}.fc-overview-list{font-size:11px;color:var(--muted);line-height:1.45}
+.fc-progress{height:10px;border-radius:999px;background:#202936;overflow:hidden;margin-top:12px}.fc-progress>div{height:100%;width:0;background:#4aa36b;transition:width .2s}
+.fc-hide-done{display:flex;align-items:center;gap:8px;margin:12px 0}.fc-hide-done input{width:20px;height:20px}
+.fc-row-actions{display:flex;gap:6px;align-items:center}.fc-action{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:8px 9px;border-radius:9px;font-size:12px;font-weight:800}.fc-action.feed.active{background:#3b2c12;border-color:#8c651a;color:#ffd58a}.fc-action.clean.active{background:#173824;border-color:#2b7546;color:#a6edbd}.fc-note-btn{min-width:38px}
+.fc-final-card{display:grid;gap:10px}.fc-final-card .danger{margin-top:8px}.fc-final-card button:disabled{opacity:.42}
+.fc-history-item{border:1px solid var(--line);border-radius:11px;padding:11px;margin-top:9px}.fc-history-head{display:flex;justify-content:space-between;gap:10px}.fc-complete{color:#9ae6b4;font-weight:800}
+
+.team-update-actions.single{grid-template-columns:1fr}
+body.feeder-view #calibrationPoolSelector{display:none!important}
+
+.cal-target{margin-top:9px;padding:7px 9px;border-radius:8px;background:rgba(77,163,255,.08);border:1px solid rgba(77,163,255,.22);color:#b9d9ff;font-size:12px;font-weight:750}
+
+.metric-cal-target{margin-top:5px;color:#8fc5ff;font-size:11px;font-weight:850}
+.calibration-result{grid-column:1/-1;display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;padding:8px 10px;border:1px solid rgba(77,163,255,.32);background:rgba(77,163,255,.08);border-radius:9px;color:#b9d9ff;font-size:12px}
+.calibration-result strong{color:#e9f4ff}.calibration-result span{font-weight:850}
+
+.calibration-result{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;padding:8px 10px;border:1px solid rgba(77,163,255,.35);background:rgba(77,163,255,.09);border-radius:9px;color:#b9d9ff;font-size:12px}
+.calibration-result strong{color:#eef7ff}
+.calibration-result span{font-weight:850}
+
+body.feeder-view #fcSession1,body.feeder-view #fcSession2,body.feeder-view #fcModeCurrent,body.feeder-view #fcModeHistory,
+body.feeder-view #fcOverviewCard,body.feeder-view #fcFinalizeCard,body.feeder-view #fcHideDoneWrap{display:none!important}
+.fc-v6-head{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.fc-v6-head div{border:1px solid var(--border);border-radius:9px;padding:7px;text-align:center}
+.fc-v6-head strong{display:block;font-size:20px}.fc-v6-head span{font-size:9px;color:var(--muted)}
+.fc-v6-cols,.fc-v6-row{display:grid;grid-template-columns:1fr 1.15fr .85fr 1.15fr .65fr;gap:3px;align-items:center}
+.fc-v6-cols{position:sticky;top:0;background:var(--bg);z-index:5;padding:6px 4px;font-size:8px;color:var(--muted);text-align:center}
+.fc-v6-row{padding:5px 4px;border-bottom:1px solid var(--border);min-height:50px}
+.fc-v6-id strong{font-size:13px}.fc-v6-id small{display:block;font-size:7px;color:var(--muted)}
+.fc-v6-btn,.fc-v6-level{width:100%;min-width:0;min-height:36px;padding:3px 2px;border:1px solid var(--border);border-radius:7px;background:var(--panel2);color:var(--text);font-size:9px}
+.fc-v6-btn small{display:block;font-size:6px}.fc-v6-btn.feed.on{border-color:#d39b36;color:#ffd487;background:rgba(211,155,54,.15)}
+.fc-v6-btn.clean.on{border-color:#2c8a55;color:#9de4ba;background:rgba(44,138,85,.16)}.fc-v6-btn.note.on{border-color:var(--blue);color:#a8d1ff}
+.fc-v6-prop{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px}.fc-v6-prop-head{padding:7px 8px;font-size:11px;font-weight:800}
+
+.fc-last-refresh{margin-top:7px;text-align:center;font-size:10px;color:var(--muted)}
+.fc-last-refresh.refreshing{color:#ffd487}
+.fc-last-refresh.ok{color:#9de4ba}
+
+body.feeder-view .fc-session-title,body.feeder-view .feeder-kpis,body.feeder-view .fc-progress,
+body.feeder-view #fcProgressText,body.feeder-view .fc-hide-done,body.feeder-view .fc-final-card{display:none!important}
+.fc-history-month{margin-bottom:18px}.fc-history-month h3{margin:10px 0 6px;font-size:15px}
+.fc-history-row{display:grid;grid-template-columns:1fr 1.25fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.fc-history-row small{display:block;color:var(--muted);font-size:10px;margin-top:2px}.fc-history-row>div:nth-child(2){text-align:right}
+.fc-history-note{grid-column:1/-1;font-size:11px;padding:7px 9px;border-radius:7px;background:var(--panel2)}
+</style>
+<style>
+:root{--bg:#020b18;--panel:#071427;--panel2:#0b1c34;--line:#17365c;--border:#17365c;--text:#f4f8ff;--muted:#aab9cc;--accent:#22b6ff;--blue:#22b6ff;--radius:16px}
+.app{max-width:1440px;padding:0 0 20px}header{position:static;background:none;padding:14px 0}header .app-title-row{display:none}
+nav{position:static;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;background:#07172a;border:1px solid #234767;border-radius:15px;padding:7px;margin:12px 0}
+nav button{border:1px solid transparent;border-radius:9px;min-height:44px;color:#829db5;font-weight:850}nav button.active{background:#123e68;border-color:#48b8e7;color:white}
+.card{border-color:#224a6e;background:linear-gradient(180deg,#0b213a,#061426)}input,select,textarea,.delta,.rowcard,canvas{background:#061629;border-color:#234767}.primary{background:linear-gradient(135deg,#138cd5,#22b6ff)}
+.toolbar button.active,.fc-subtabs button.active{background:#123e68;color:#fff}.toast{bottom:20px}.fc-v6-btn,.fc-v6-level{min-height:44px;font-size:11px}.fc-v6-id small{font-size:10px}.fc-v6-btn small{font-size:9px}.fc-v6-cols{font-size:10px}
+@media(max-width:600px){nav{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-v6-btn,.fc-v6-level{font-size:9px}.fc-v6-id small{font-size:8px}.fc-v6-btn small{font-size:7px}}
+</style><style>
+#selectedPoolPill{display:none}#calibrationPoolSelector{display:none}nav{margin-top:0}nav button[data-view="feeders"]{display:none}nav{grid-template-columns:repeat(3,minmax(0,1fr))}body.feeder-view nav{display:none}.app{padding-bottom:10px}.card{padding:16px}.section-title{font-size:18px}label{font-size:14px}.btn{min-height:56px;font-size:17px}.fc-v6-cols{display:none}.fc-v6-row{display:flex;flex-wrap:wrap;gap:9px;padding:14px}.fc-v6-id{width:100%}.fc-v6-id strong{font-size:20px}.fc-v6-id small{font-size:12px}.fc-v6-btn{flex:1;min-width:90px;font-size:14px;min-height:50px}.fc-v6-btn small{font-size:10px}.fc-v6-level{width:85px;font-size:13px;min-height:50px}.fc-v6-prop-head{font-size:17px;padding:14px}.fc-last-refresh{font-size:12px}.toast{max-width:90%;white-space:normal}
+</style></head>
+<body>
+<div class="app">
+  <header>
+    <div class="app-title-row"><h1>Pool Calibration Log</h1><span class="version-badge">v6.2</span></div>
+    <div class="subrow">
+      <span class="pill local">LOCAL TEST MODE</span>
+      <span class="pill" id="selectedPoolPill">No pool selected</span>
+    </div>
+  </header>
+
+  <section class="card" id="calibrationPoolSelector">
+    <div class="grid2">
+      <div>
+        <label for="property">Property</label>
+        <select id="property"></select>
+      </div>
+      <div>
+        <label for="pool">Pool</label>
+        <select id="pool"></select>
+      </div>
+    </div>
+  </section>
+
+  <nav>
+  <button data-view="spot" class="active">Spot Check</button>
+  <button data-view="history">History</button>
+  <button data-view="orp">ORP Profile</button>
+  <button data-view="feeders">Feeder Cleaning</button>
+</nav>
+<main>
+    <section id="view-spot">
+      <div class="card">
+        <div class="grid2">
+          <div>
+            <label for="tech">Technician</label>
+            <input id="tech" autocomplete="name" placeholder="Technician name" />
+          </div>
+          <div>
+            <label for="observedAt">Observed date/time</label>
+            <input id="observedAt" type="datetime-local" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Measurements</h2>
+        <div class="measure-head"><span>Metric</span><span>Controller</span><span>Field Test</span><span>Δ Ctrl−Test</span></div>
+        <div class="measure-row">
+          <div class="metric">pH</div>
+          <input id="controllerPh" type="number" inputmode="decimal" step="0.01" min="0" max="14" placeholder="7.40"/>
+          <input id="testPh" type="number" inputmode="decimal" step="0.01" min="0" max="14" placeholder="7.40"/>
+          <div class="delta" id="phDelta">—</div>
+        </div>
+        <div class="measure-row">
+          <div class="metric">Free Chlorine</div>
+          <input id="controllerFc" type="number" inputmode="decimal" step="0.01" min="0" max="60" placeholder="3.50"/>
+          <input id="testFc" type="number" inputmode="decimal" step="0.01" min="0" max="60" placeholder="3.50"/>
+          <div class="delta" id="fcDelta">—</div>
+        </div>
+        <div class="orp-row">
+          <div class="metric">ORP</div>
+          <input id="orpMv" type="number" inputmode="numeric" step="1" min="0" max="1200" placeholder="735"/>
+          <div class="muted">mV</div><div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <label style="display:flex;gap:10px;align-items:center;color:var(--text)">
+          <input id="calPerformed" type="checkbox" style="width:22px;min-height:auto" />
+          Calibration performed during this visit
+        </label>
+        <div id="calFields" class="hidden" style="margin-top:12px">
+          <div class="grid2">
+            <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="phCal" type="checkbox" style="width:22px;min-height:auto"/> pH calibrated</label>
+            <label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input id="fcCal" type="checkbox" style="width:22px;min-height:auto"/> FC calibrated</label>
+          </div>
+          <div class="grid2" style="margin-top:10px">
+            <div><label>Post-calibration pH</label><input id="postPh" type="number" inputmode="decimal" step="0.01"/></div>
+            <div><label>Post-calibration FC</label><input id="postFc" type="number" inputmode="decimal" step="0.01"/></div>
+          </div>
+        </div>
+        <details>
+          <summary>Notes</summary>
+          <textarea id="notes" placeholder="Optional notes"></textarea>
+        </details>
+      </div>
+
+      <button class="btn primary" id="saveBtn">Save Spot Check</button>
+
+      <div class="card">
+        <h2 class="section-title">Recent checks</h2>
+        <div id="recentChecks" class="history"></div>
+      </div>
+    </section>
+
+    <section id="view-history" class="hidden">
+      <div class="card">
+        <div class="kpis">
+          <div class="kpi"><div class="v" id="kpiChecks">0</div><div class="l">Checks</div></div>
+          <div class="kpi"><div class="v" id="kpiLast">—</div><div class="l">Last check</div></div>
+          <div class="kpi"><div class="v" id="kpiPh">—</div><div class="l">Median |pH Δ|</div></div>
+          <div class="kpi"><div class="v" id="kpiFc">—</div><div class="l">Median |FC Δ|</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar" id="historyFilter">
+          <button data-days="7">7D</button><button data-days="30" class="active">30D</button><button data-days="90">90D</button><button data-days="all">All</button>
+        </div>
+        <div id="historyRows" class="history"></div>
+      </div>
+    </section>
+
+    <section id="view-orp" class="hidden">
+      <div class="card">
+        <div class="grid2">
+          <div><label>Target field-test FC</label><input id="targetFc" type="number" inputmode="decimal" step="0.01" placeholder="3.50"/></div>
+          <div><label>Target field-test pH</label><input id="targetPh" type="number" inputmode="decimal" step="0.01" placeholder="7.40"/></div>
+        </div>
+        <div class="grid2" style="margin-top:10px">
+          <div><label>FC comparison window ± ppm</label><input id="fcWindow" type="number" inputmode="decimal" step="0.05" value="0.25"/></div>
+          <div><label>pH comparison window ±</label><input id="phWindow" type="number" inputmode="decimal" step="0.01" value="0.10"/></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="section-title">Historical ORP profile</h2>
+        <canvas id="orpChart" width="800" height="420"></canvas>
+        <div class="insight" id="orpInsight">Enter target FC and pH to evaluate comparable historical readings.</div>
+      </div>
+    </section>
+
+    <section id="view-feeders" class="hidden">
+      <div class="card fc-top">
+        <div class="feeder-head">
+          <div><div class="muted">Pulsar preventive maintenance</div><h2 style="margin:3px 0 0">Feeder Cleaning</h2></div>
+          <span class="version-badge">v6.2</span>
+        </div>
+<div class="fc-subtabs">
+          <button data-fctab="current" class="active">Current</button>
+          <button data-fctab="history">History</button>
+        </div>
+      </div>
+
+      <div id="fcCurrent">
+        <div class="card">
+          <div class="fc-session-title"><div><div class="muted" id="fcCycleLabel"></div><h2 id="fcSessionTitle" style="margin:2px 0"></h2></div><div class="fc-session-dot"></div></div>
+          <div id="fcOverview"></div>
+        </div>
+
+        <div class="card">
+          <div class="kpis feeder-kpis">
+            <div class="kpi"><div class="v" id="fcDue">0</div><div class="l">Due</div></div>
+            <div class="kpi"><div class="v" id="fcFeedDown">0</div><div class="l">Feed Down</div></div>
+            <div class="kpi"><div class="v" id="fcCleaned">0</div><div class="l">Cleaned</div></div>
+            <div class="kpi"><div class="v" id="fcIssues">0</div><div class="l">Notes</div></div>
+          </div>
+          <div class="fc-progress"><div id="fcProgressBar"></div></div>
+          <div class="muted" id="fcProgressText" style="margin-top:7px"></div>
+          <div class="team-update-actions single">
+            <button class="btn secondary" id="fcShareStatus">Share Status Report</button><div id="fcLastRefresh" class="fc-last-refresh">Shared data not refreshed yet</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="toolbar feeder-filter">
+            <button data-fprop="All" class="active">All</button><button data-fprop="Aquatica">AQ</button><button data-fprop="SeaWorld">SW</button><button data-fprop="Discovery Cove">DC</button>
+          </div>
+          <label class="fc-hide-done"><input type="checkbox" id="fcHideDone"> Hide cleaned feeders</label>
+          <div id="fcQueue"></div>
+        </div>
+
+        <div class="card fc-final-card">
+          <div id="fcFinalizeStatus" class="muted"></div>
+          <button class="btn primary" id="fcFinalize" disabled>Finalize Session</button>
+          <button class="btn danger" id="fcResetSession">Reset Session</button>
+        </div>
+      </div>
+
+      <div id="fcHistoryView" class="hidden">
+        <div class="card"><h2 style="margin-top:0">Cleaning History</h2><div id="fcHistoryList"></div></div>
+      </div>
+    </section>
+        <div id="fcModalHistory" class="history" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+
+<div id="fcNoteModal" class="modal hidden"><div class="modal-sheet">
+  <div class="modal-title-row"><div><div class="muted" id="fcNotePool"></div><h2 id="fcNoteTitle" style="margin:2px 0"></h2></div><button class="smallbtn" id="fcNoteClose">Close</button></div>
+  <label style="margin-top:14px">Equipment note</label>
+  <textarea id="fcNoteText" placeholder="e.g. Needs new discharge valve, lid broken"></textarea>
+  <button class="btn primary" id="fcSaveNote">Save Note</button>
+  <button class="btn danger" id="fcResetOne" style="margin-top:10px">Reset This Feeder to Due</button>
+</div></div>
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+function calibrationTargetLine(r){
+  const parts=[];
+  if(r.phCal && r.postPh !== null && r.postPh !== undefined && r.postPh !== "")
+    parts.push(`pH → ${Number(r.postPh).toFixed(2)}`);
+  if(r.fcCal && r.postFc !== null && r.postFc !== undefined && r.postFc !== "")
+    parts.push(`FC → ${Number(r.postFc).toFixed(2)} ppm`);
+  return parts.length ? `<div class="calibration-result"><strong>Calibrated to</strong>${parts.map(x=>`<span>${x}</span>`).join("")}</div>` : "";
+}
+
+const POOLS = [
+  ["Aquatica","501","Cutback Cove"],["Aquatica","502","Big Surf Shores"],["Aquatica","503","Omaka Rocka"],
+  ["Aquatica","504","Katas Kookaburra"],["Aquatica","505","Roa's Rapids"],["Aquatica","506","Whanau Way"],
+  ["Aquatica","507","Walkabout Waters"],["Aquatica","508","Ray Rush/Whahalla Wave"],["Aquatica","509","Loggerhead/Tassie"],
+  ["Aquatica","510","Dolphin Plunge"],["Aquatica","520","Ihu Breakaway Falls"],["Aquatica","530","Taumata Racer"],
+  ["Aquatica","540","KareKareKurl"],["Aquatica","550","Riptide"],
+  ["SeaWorld","Infinity Falls 1","Infinity Falls 1"],["SeaWorld","Infinity Falls 2","Infinity Falls 2"],
+  ["SeaWorld","Kraken","Kraken"],["SeaWorld","Manta Pond","Manta Pond"],["SeaWorld","Main Gate","Main Gate"],
+  ["SeaWorld","Journey to Atlantis","Journey to Atlantis"],["SeaWorld","Sesame","Sesame"],["SeaWorld","Pearl","Pearl"],
+  ["Discovery Cove","Tropical River/Resort Pool","Tropical River/Resort Pool"],["Discovery Cove","Freshwater Oasis","Freshwater Oasis"]
+].map(([property,id,name])=>({property,id,name,key:`${property}|${id}`}));
+
+const $ = id => document.getElementById(id);
+const state = {historyDays:30};
+
+function nowLocalInput(){
+  const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+$("observedAt").value=nowLocalInput();
+
+function loadPrefs(){
+  $("tech").value=localStorage.getItem("fieldtest.pcl.tech")||"";
+}
+function initSelectors(){
+  const props=[...new Set(POOLS.map(p=>p.property))];
+  $("property").innerHTML=props.map(p=>`<option>${p}</option>`).join("");
+  const savedProp=localStorage.getItem("fieldtest.pcl.property");
+  if(savedProp && props.includes(savedProp)) $("property").value=savedProp;
+  fillPools();
+  const savedPool=localStorage.getItem("fieldtest.pcl.pool");
+  if(savedPool && [...$("pool").options].some(o=>o.value===savedPool)) $("pool").value=savedPool;
+  updatePoolPill();
+}
+function fillPools(){
+  const prop=$("property").value;
+  const list=POOLS.filter(p=>p.property===prop);
+  $("pool").innerHTML=list.map(p=>`<option value="${p.key}">${p.id}${p.name!==p.id?` — ${p.name}`:""}</option>`).join("");
+  updatePoolPill();
+}
+function selectedPool(){ return POOLS.find(p=>p.key===$("pool").value); }
+function updatePoolPill(){
+  const p=selectedPool();
+  $("selectedPoolPill").textContent=p?`${p.property} • ${p.id}${p.name!==p.id?` ${p.name}`:""}`:"No pool selected";
+  renderAll();
+}
+$("property").addEventListener("change",()=>{localStorage.setItem("fieldtest.pcl.property",$("property").value);fillPools();localStorage.setItem("fieldtest.pcl.pool",$("pool").value);renderAll();});
+$("pool").addEventListener("change",()=>{localStorage.setItem("fieldtest.pcl.pool",$("pool").value);updatePoolPill();});
+
+function num(id){const v=parseFloat($(id).value);return Number.isFinite(v)?v:null}
+function deltaClass(abs, type){
+  if(type==="ph") return abs<=.10?"good":abs<=.20?"warn":"bad";
+  return abs<=.30?"good":abs<=.50?"warn":"bad";
+}
+function updateDeltas(){
+  [["controllerPh","testPh","phDelta","ph"],["controllerFc","testFc","fcDelta","fc"]].forEach(([a,b,out,type])=>{
+    const x=num(a),y=num(b),el=$(out);
+    el.className="delta";
+    if(x===null||y===null){el.textContent="—";return}
+    const d=x-y; el.textContent=(d>=0?"+":"")+d.toFixed(2); el.classList.add(deltaClass(Math.abs(d),type));
+  });
+}
+["controllerPh","testPh","controllerFc","testFc"].forEach(id=>$(id).addEventListener("input",updateDeltas));
+$("calPerformed").addEventListener("change",()=>$("calFields").classList.toggle("hidden",!$("calPerformed").checked));
+
+function getRecords(){try{return JSON.parse(localStorage.getItem("fieldtest.pcl.records")||"[]")}catch{return []}}
+function saveRecords(r){localStorage.setItem("fieldtest.pcl.records",JSON.stringify(r))}
+function uuid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+function validate(){
+  const required=["controllerPh","testPh","controllerFc","testFc","orpMv"];
+  for(const id of required){if(num(id)===null) return false}
+  return !!selectedPool();
+}
+$("saveBtn").addEventListener("click",()=>{
+  if(!validate()){toast("Complete all required readings.");return}
+  const p=selectedPool();
+  const rec={
+    id:uuid(),poolKey:p.key,property:p.property,poolId:p.id,poolName:p.name,
+    observedAt:new Date($("observedAt").value).toISOString(),createdAt:new Date().toISOString(),
+    technician:$("tech").value.trim(),
+    controllerPh:num("controllerPh"),testPh:num("testPh"),controllerFc:num("controllerFc"),testFc:num("testFc"),
+    orpMv:num("orpMv"),calPerformed:$("calPerformed").checked,phCal:$("phCal").checked,fcCal:$("fcCal").checked,
+    postPh:num("postPh"),postFc:num("postFc"),notes:$("notes").value.trim()
+  };
+  const all=getRecords(); all.push(rec); saveRecords(all);
+  localStorage.setItem("fieldtest.pcl.tech",rec.technician);
+  ["controllerPh","testPh","controllerFc","testFc","orpMv","postPh","postFc"].forEach(id=>$(id).value="");
+  $("notes").value="";$("calPerformed").checked=false;$("calFields").classList.add("hidden");$("phCal").checked=false;$("fcCal").checked=false;
+  $("observedAt").value=nowLocalInput(); updateDeltas(); renderAll(); toast("Spot check saved locally.");
+});
+
+function poolRecords(){
+  const key=$("pool").value;
+  return getRecords().filter(r=>r.poolKey===key).sort((a,b)=>new Date(b.observedAt)-new Date(a.observedAt));
+}
+function fmtDate(s){return new Date(s).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}
+function recCard(r,showDelete=false){
+  const ph=r.controllerPh-r.testPh,fc=r.controllerFc-r.testFc;
+  return `<div class="rowcard">
+    <div class="rowtop"><div><div class="rowtitle">${fmtDate(r.observedAt)}</div><div class="rowmeta">${r.technician||"Unknown tech"}${r.calPerformed ? ` • CALIBRATED${r.phCal||r.fcCal ? ` (${[r.phCal?"pH":"",r.fcCal?"FC":""].filter(Boolean).join(" + ")})` : ""}` : ""}</div></div>
+    ${showDelete?`<button class="danger" onclick="deleteRec('${r.id}')">Delete</button>`:""}</div>
+    <div class="metrics">
+      <div class="metricbox">pH Ctrl/Test<b>${r.controllerPh.toFixed(2)} / ${r.testPh.toFixed(2)}</b><span>Δ ${ph>=0?"+":""}${ph.toFixed(2)}</span></div>
+      <div class="metricbox">FC Ctrl/Test<b>${r.controllerFc.toFixed(2)} / ${r.testFc.toFixed(2)}</b><span>Δ ${fc>=0?"+":""}${fc.toFixed(2)}</span></div>
+      <div class="metricbox">ORP<b>${Math.round(r.orpMv)} mV</b><span>${r.notes?"Notes saved":""}</span></div>
+    </div>${calibrationTargetLine(r)}
+  </div>`;
+}
+window.deleteRec=(id)=>{
+  if(!confirm("Delete this spot check?")) return;
+  saveRecords(getRecords().filter(r=>r.id!==id)); renderAll(); toast("Record deleted.");
+}
+function median(arr){
+  if(!arr.length)return null; const a=[...arr].sort((x,y)=>x-y),m=Math.floor(a.length/2);
+  return a.length%2?a[m]:(a[m-1]+a[m])/2;
+}
+function quartiles(arr){
+  const a=[...arr].sort((x,y)=>x-y); if(!a.length)return [null,null];
+  const q=(p)=>{const pos=(a.length-1)*p,b=Math.floor(pos),r=pos-b;return a[b+1]!==undefined?a[b]+r*(a[b+1]-a[b]):a[b]};
+  return [q(.25),q(.75)];
+}
+function renderRecent(){
+  const recs=poolRecords().slice(0,5);
+  $("recentChecks").innerHTML=recs.length?recs.map(r=>recCard(r)).join(""):`<div class="muted">No saved checks for this pool yet.</div>`;
+}
+function filteredHistory(){
+  const recs=poolRecords(); if(state.historyDays==="all") return recs;
+  const cutoff=Date.now()-state.historyDays*86400000; return recs.filter(r=>new Date(r.observedAt).getTime()>=cutoff);
+}
+function renderHistory(){
+  const recs=filteredHistory(),all=poolRecords();
+  $("historyRows").innerHTML=recs.length?recs.map(r=>recCard(r,true)).join(""):`<div class="muted">No records in this period.</div>`;
+  $("kpiChecks").textContent=all.length;
+  $("kpiLast").textContent=all.length?fmtDate(all[0].observedAt):"—";
+  const mph=median(all.map(r=>Math.abs(r.controllerPh-r.testPh)));
+  const mfc=median(all.map(r=>Math.abs(r.controllerFc-r.testFc)));
+  $("kpiPh").textContent=mph===null?"—":mph.toFixed(2);
+  $("kpiFc").textContent=mfc===null?"—":mfc.toFixed(2);
+}
+$("historyFilter").addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON")return;
+  [...$("historyFilter").children].forEach(b=>b.classList.remove("active"));e.target.classList.add("active");
+  state.historyDays=e.target.dataset.days==="all"?"all":Number(e.target.dataset.days);renderHistory();
+});
+
+["targetFc","targetPh","fcWindow","phWindow"].forEach(id=>$(id).addEventListener("input",renderOrp));
+function renderOrp(){
+  const canvas=$("orpChart"),ctx=canvas.getContext("2d"),recs=poolRecords().filter(r=>Number.isFinite(r.testFc)&&Number.isFinite(r.testPh)&&Number.isFinite(r.orpMv));
+  ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle="#0e141c";ctx.fillRect(0,0,canvas.width,canvas.height);
+  const pad={l:62,r:20,t:20,b:48}; const w=canvas.width-pad.l-pad.r,h=canvas.height-pad.t-pad.b;
+  if(!recs.length){ctx.fillStyle="#94a3b8";ctx.font="20px system-ui";ctx.fillText("No ORP history for this pool",80,100);$("orpInsight").textContent="Save spot checks to build this pool's historical ORP profile.";return}
+  let xs=recs.map(r=>r.testFc),ys=recs.map(r=>r.orpMv),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+  if(xmin===xmax){xmin-=.5;xmax+=.5} if(ymin===ymax){ymin-=25;ymax+=25}
+  xmin=Math.max(0,xmin-.2);xmax+=.2;ymin-=20;ymax+=20;
+  const X=x=>pad.l+(x-xmin)/(xmax-xmin)*w,Y=y=>pad.t+h-(y-ymin)/(ymax-ymin)*h;
+  ctx.strokeStyle="#273241";ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){let y=pad.t+h*i/5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+w,y);ctx.stroke()}
+  ctx.fillStyle="#94a3b8";ctx.font="14px system-ui";
+  ctx.fillText("Field-test FC (ppm)",pad.l+w/2-55,canvas.height-10);
+  ctx.save();ctx.translate(16,pad.t+h/2+35);ctx.rotate(-Math.PI/2);ctx.fillText("ORP (mV)",0,0);ctx.restore();
+  recs.forEach(r=>{
+    const ph=r.testPh;
+    ctx.fillStyle=ph<7.2?"#60a5fa":ph<7.4?"#22c55e":ph<7.6?"#f59e0b":"#ef4444";
+    ctx.beginPath();ctx.arc(X(r.testFc),Y(r.orpMv),6,0,Math.PI*2);ctx.fill();
+  });
+  const tf=num("targetFc"),tp=num("targetPh"),fw=num("fcWindow")??.25,pw=num("phWindow")??.10;
+  if(tf===null||tp===null){$("orpInsight").textContent=`${recs.length} historical sample${recs.length===1?"":"s"}. Enter target field-test FC and pH for a comparable-history estimate.`;return}
+  const matches=recs.filter(r=>Math.abs(r.testFc-tf)<=fw&&Math.abs(r.testPh-tp)<=pw);
+  if(matches.length<5){$("orpInsight").textContent=`Not enough comparable history yet — ${matches.length} of 5 minimum samples within FC ${tf-fw}–${tf+fw} ppm and pH ${(tp-pw).toFixed(2)}–${(tp+pw).toFixed(2)}.`;return}
+  const med=median(matches.map(r=>r.orpMv)),[q1,q3]=quartiles(matches.map(r=>r.orpMv));
+  $("orpInsight").innerHTML=`At field-test FC <b>${(tf-fw).toFixed(2)}–${(tf+fw).toFixed(2)} ppm</b> and pH <b>${(tp-pw).toFixed(2)}–${(tp+pw).toFixed(2)}</b>, this pool has historically recorded a median ORP of <b>${Math.round(med)} mV</b> (n=${matches.length}). Middle 50%: <b>${Math.round(q1)}–${Math.round(q3)} mV</b>.<br><span class="muted">Site-specific historical relationship; not a universal ORP target.</span>`;
+}
+function renderAll(){renderRecent();renderHistory();renderOrp()}
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",1800)}
+
+document.querySelector("nav").addEventListener("click",e=>{
+  if(e.target.tagName!=="BUTTON")return; const view=e.target.dataset.view;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b===e.target));
+  ["spot","history","orp","feeders"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
+  if(view==="orp") setTimeout(renderOrp,10); if(view==="feeders") setTimeout(fcRender,10);
+});
+loadPrefs();initSelectors();renderAll();
+
+</script>
+
+<script>
+/* v2: IndexedDB + Supabase durable/shared storage layer.
+   localStorage remains only as a fast UI mirror for the existing prototype UI. */
+const PCL_SB_URL="https://eseqjmcsdwqyohmoabnq.supabase.co";
+const PCL_SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZXFqbWNzZHdxeW9obW9hYm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MjUxMTIsImV4cCI6MjEwNDIwMTExMn0.PIqeyV12we4gCuyFXYwcN9-tCgc-rIhYud2DuUhxqlQ";
+let pclSyncing=false;
+
+function pclDB(){
+  return new Promise((resolve,reject)=>{
+    const q=indexedDB.open("fieldTestCalibrationDB",1);
+    q.onupgradeneeded=()=>{
+      const db=q.result;
+      if(!db.objectStoreNames.contains("records")){
+        const s=db.createObjectStore("records",{keyPath:"id"});
+        s.createIndex("syncStatus","syncStatus");
+      }
+    };
+    q.onsuccess=()=>resolve(q.result); q.onerror=()=>reject(q.error);
+  });
+}
+async function pclAll(){
+  const db=await pclDB();
+  return new Promise((res,rej)=>{
+    const q=db.transaction("records","readonly").objectStore("records").getAll();
+    q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
+  });
+}
+async function pclPut(r){
+  const db=await pclDB();
+  return new Promise((res,rej)=>{
+    const q=db.transaction("records","readwrite").objectStore("records").put(r);
+    q.onsuccess=()=>res(); q.onerror=()=>rej(q.error);
+  });
+}
+async function pclPutMany(rows){ for(const r of rows) await pclPut(r); }
+
+function pclHeaders(extra={}){
+  return {apikey:PCL_SB_KEY,Authorization:`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra};
+}
+function pclToRemote(r){
+  return {
+    id:r.id,pool_key:r.poolKey,property:r.property,pool_id:r.poolId,pool_name:r.poolName,
+    observed_at:r.observedAt,technician:r.technician||null,
+    controller_ph:r.controllerPh,test_ph:r.testPh,controller_fc:r.controllerFc,test_fc:r.testFc,
+    orp_mv:r.orpMv,calibration_performed:!!r.calPerformed,ph_calibrated:!!r.phCal,
+    fc_calibrated:!!r.fcCal,post_calibration_ph:r.postPh,post_calibration_fc:r.postFc,
+    notes:r.notes||null,device_id:r.deviceId||null
+  };
+}
+function pclFromRemote(r){
+  return {
+    id:r.id,poolKey:r.pool_key,property:r.property,poolId:r.pool_id,poolName:r.pool_name,
+    observedAt:r.observed_at,createdAt:r.created_at,technician:r.technician||"",
+    controllerPh:Number(r.controller_ph),testPh:Number(r.test_ph),
+    controllerFc:Number(r.controller_fc),testFc:Number(r.test_fc),orpMv:Number(r.orp_mv),
+    calPerformed:!!r.calibration_performed,phCal:!!r.ph_calibrated,fcCal:!!r.fc_calibrated,
+    postPh:r.post_calibration_ph==null?null:Number(r.post_calibration_ph),
+    postFc:r.post_calibration_fc==null?null:Number(r.post_calibration_fc),
+    notes:r.notes||"",deviceId:r.device_id||null,syncStatus:"synced"
+  };
+}
+function pclSetBadge(){
+  const el=document.querySelector(".pill.local");
+  if(!el) return;
+  pclAll().then(rows=>{
+    const n=rows.filter(r=>r.syncStatus!=="synced").length;
+    el.textContent=!navigator.onLine?`OFFLINE${n?` • ${n} WAITING`:""}`:
+      pclSyncing?`SAVING${n?` • ${n}`:""}`:n?`TEST • ${n} PENDING`:"TEST • SAVED ON DEVICE";
+  }).catch(()=>{});
+}
+async function pclPush(r){
+  const u=`${PCL_SB_URL}/rest/v1/spot_checks?on_conflict=id`;
+  const resp=await fetch(u,{method:"POST",headers:pclHeaders({Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(pclToRemote(r))});
+  if(!resp.ok) throw new Error(await resp.text());
+  r.syncStatus="synced"; await pclPut(r);
+}
+async function pclPull(){
+  const resp=await fetch(`${PCL_SB_URL}/rest/v1/spot_checks?select=*&order=observed_at.desc`,{headers:pclHeaders()});
+  if(!resp.ok) throw new Error(await resp.text());
+  const remote=(await resp.json()).map(pclFromRemote);
+  const local=await pclAll(), pending=new Map(local.filter(r=>r.syncStatus!=="synced").map(r=>[r.id,r]));
+  for(const r of remote) if(!pending.has(r.id)) await pclPut(r);
+}
+async function pclRefreshMirror(){
+  const rows=(await pclAll()).sort((a,b)=>new Date(a.observedAt)-new Date(b.observedAt));
+  localStorage.setItem("fieldtest.pcl.records",JSON.stringify(rows));
+  if(typeof renderAll==="function") renderAll();
+}
+async function pclSync(){
+  if(pclSyncing||!navigator.onLine){pclSetBadge();return}
+  pclSyncing=true;pclSetBadge();
+  try{
+    const rows=await pclAll();
+    for(const r of rows.filter(x=>x.syncStatus!=="synced")){
+      try{ await pclPush(r); }catch(e){ r.syncStatus="error"; await pclPut(r); console.error("Sync push",e); }
+    }
+    await pclPull();
+    await pclRefreshMirror();
+  }catch(e){console.error("Sync",e)}
+  pclSyncing=false;pclSetBadge();
+}
+
+/* Replace the prototype save routine: UI mirror + IndexedDB first, cloud second. */
+const pclOriginalSaveRecords=saveRecords;
+saveRecords=function(rows){
+  localStorage.setItem("fieldtest.pcl.records",JSON.stringify(rows));
+  (async()=>{
+    const existing=new Map((await pclAll()).map(r=>[r.id,r]));
+    for(const row of rows){
+      const prior=existing.get(row.id);
+      if(prior && prior.syncStatus==="synced") row.syncStatus="synced";
+      else row.syncStatus=row.syncStatus||"pending";
+      row.deviceId=row.deviceId||localStorage.getItem("fieldtest.pcl.deviceId")||(crypto.randomUUID?crypto.randomUUID():String(Date.now()));
+      localStorage.setItem("fieldtest.pcl.deviceId",row.deviceId);
+      await pclPut(row);
+    }
+    pclSetBadge(); pclSync();
+  })();
+};
+
+/* On first v2 load, migrate any surviving v1 local records into IndexedDB, then sync. */
+(async()=>{
+  try{
+    const legacy=JSON.parse(localStorage.getItem("fieldtest.pcl.records")||"[]");
+    const current=new Map((await pclAll()).map(r=>[r.id,r]));
+    for(const r of legacy){
+      if(!current.has(r.id)){r.syncStatus="pending";await pclPut(r);}
+    }
+    await pclRefreshMirror();
+    await pclSync();
+  }catch(e){console.error("Startup storage migration",e)}
+})();
+window.addEventListener("online",pclSync);
+window.addEventListener("offline",pclSetBadge);
+</script>
+
+
+
+
+
+<script>
+/* Pulsar Feeder Cleaning v6.2 — session workflow */
+const FC_FEEDERS=[
+["Aquatica","501","Cutback Cove",4],["Aquatica","502","Big Surf Shores",4],["Aquatica","503","Omaka Rocka",1],["Aquatica","504","Katas Kookaburra",2],["Aquatica","505","Roa's Rapids",10],["Aquatica","506","Whanau Way",1],["Aquatica","507","Walkabout Waters",4],["Aquatica","508","Ray Rush/Whahalla Wave",2],["Aquatica","509","Loggerhead/Tassie",4],["Aquatica","510","Dolphin Plunge",1],["Aquatica","520","Ihu Breakaway Falls",1],["Aquatica","530","Taumata Racer",1],["Aquatica","540","KareKareKurl",1],["Aquatica","550","Riptide",1],
+["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],
+["SeaWorld","Sesame","Sesame",1],["SeaWorld","IF1","Infinity Falls 1",2],["SeaWorld","IF2","Infinity Falls 2",2],["SeaWorld","Kraken","Kraken",2],["SeaWorld","J2A","Journey to Atlantis",4],["SeaWorld","Manta","Manta Pond",2],["SeaWorld","Pipeline","Pipeline",1]];
+const FC_LEVELS=["100%","75%","50%","25%","Empty"];
+const FC={month:new Date().toISOString().slice(0,7),rows:[],property:"All"};
+function fcInv(){return FC_FEEDERS.flatMap(([property,pool,pool_name,n])=>Array.from({length:n},(_,i)=>{let letter=String.fromCharCode(65+i);return {feeder_key:`${property}|${pool}|${letter}`,property,pool,pool_name,letter,feeder_id:`${pool}-${letter}`}}))}
+function fcRow(k){return FC.rows.find(r=>r.feeder_key===k)}
+function fcTech(){return null}
+function fcHeaders(extra={}){return {"apikey":PCL_SB_KEY,"Authorization":`Bearer ${PCL_SB_KEY}`,"Content-Type":"application/json",...extra}}
+function fcFmt(t){return t?new Date(t).toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):""}
+function fcElapsed(a,b){if(!a||!b)return"";let d=new Date(b)-new Date(a);if(d<0)return"";let h=Math.floor(d/36e5),m=Math.round((d%36e5)/6e4);return h?`${h}h ${m}m`:`${m}m`}
+async function fcLoad(){
+ const status=document.getElementById("fcLastRefresh");
+ if(status){status.textContent="Loading local test data…";status.classList.remove("ok");status.classList.add("refreshing")}
+ try{
+   let a=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?month=eq.${FC.month}&select=*`,{headers:fcHeaders(),cache:"no-store"});
+   if(!a.ok) throw new Error(await a.text());
+   FC.rows=await a.json();
+   fcRender();
+   if(status){
+     status.textContent=`Local data refreshed ${new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"})}`;
+     status.classList.remove("refreshing");status.classList.add("ok");
+   }
+ }catch(e){
+   console.error("Feeder refresh failed",e);
+   if(status){
+     status.textContent="Refresh failed — showing last loaded data";
+     status.classList.remove("refreshing","ok");
+   }
+ }
+}
+
+async function fcSave(x,patch){let r=fcRow(x.feeder_key)||{id:crypto.randomUUID(),month:FC.month,feeder_key:x.feeder_key,property:x.property,pool_id:x.pool,pool_name:x.pool_name,feeder_letter:x.letter,session:1};Object.assign(r,patch);let resp=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?on_conflict=month,feeder_key`,{method:"POST",headers:fcHeaders({Prefer:"resolution=merge-duplicates,return=representation"}),body:JSON.stringify(r)});if(!resp.ok)return toast("Could not save.");let saved=(await resp.json())[0],i=FC.rows.findIndex(v=>v.feeder_key===x.feeder_key);if(i>=0)FC.rows[i]=saved;else FC.rows.push(saved);fcRender()}
+window.fcV6Feed=async k=>{let t=null;let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.feed_down_at&&!r?.cleaned_at){if(!confirm(`Clear feed-down for ${x.feeder_id}?`))return;return fcSave(x,{feed_down_at:null,feed_down_by:null,feed_level:null,level_updated_at:null})}await fcSave(x,{feed_down_at:new Date().toISOString(),feed_down_by:t,feed_level:"100%",level_updated_at:new Date().toISOString(),cleaned_at:null,cleaned_by:null})}
+window.fcV6Clean=async k=>{let t=null;let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k);if(r?.cleaned_at){if(!confirm(`Clear cleaned status for ${x.feeder_id}?`))return;return fcSave(x,{cleaned_at:null,cleaned_by:null})}let now=new Date().toISOString(),patch={cleaned_at:now,cleaned_by:t,feed_level:"Empty",level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
+window.fcV6Level=async(k,v)=>{if(!v)return;let t=null;let x=fcInv().find(q=>q.feeder_key===k),r=fcRow(k),now=new Date().toISOString(),patch={feed_level:v,level_updated_at:now};if(!r?.feed_down_at){patch.feed_down_at=now;patch.feed_down_by=t}await fcSave(x,patch)}
+window.fcNote=k=>{let x=fcInv().find(v=>v.feeder_key===k),r=fcRow(k),v=prompt(`Note for ${x.feeder_id}`,r?.note||"");if(v!==null)fcSave(x,{note:v.trim()})}
+function fcStatusReport(){let a=fcInv().map(x=>({...x,r:fcRow(x.feeder_key)||{}})),feed=a.filter(x=>x.r.feed_down_at&&!x.r.cleaned_at),clean=a.filter(x=>x.r.cleaned_at),L=["PULSAR FEEDER STATUS",new Date().toLocaleString([]),""];function sec(title,rows,done){if(!rows.length)return;L.push(title);["Aquatica","SeaWorld","Discovery Cove"].forEach(p=>{let q=rows.filter(x=>x.property===p);if(!q.length)return;L.push(p.toUpperCase());q.forEach(x=>{let r=x.r,d=fcElapsed(r.feed_down_at,done?r.cleaned_at:new Date().toISOString());L.push(`${done?"✓":"•"} ${x.feeder_id} — ${done?`Cleaned ${fcFmt(r.cleaned_at)}`:`${r.feed_level||"100%"} • ${fcFmt(r.feed_down_at)}`}${d?` • ${d}`:""}`);if(r.note?.trim())L.push(`  Note: ${r.note.trim()}`)});L.push("")})}sec("FEEDING DOWN",feed,false);sec("CLEANED",clean,true);L.push("STATUS",`${feed.length} feeding down`,`${clean.length} cleaned`);return L.join("\n").trim()}
+async function fcShareStatus(){let text=fcStatusReport();if(navigator.share){try{await navigator.share({title:"Pulsar Feeder Status",text})}catch(e){}}else{await navigator.clipboard.writeText(text);toast("Status report copied.")}}
+function fcRender(){let all=fcInv(),visible=FC.property==="All"?all:all.filter(x=>x.property===FC.property),feed=all.filter(x=>{let r=fcRow(x.feeder_key);return r?.feed_down_at&&!r?.cleaned_at}).length,clean=all.filter(x=>fcRow(x.feeder_key)?.cleaned_at).length,notes=all.filter(x=>fcRow(x.feeder_key)?.note?.trim()).length;let ov=document.getElementById("fcOverview");if(ov)ov.innerHTML=`<div class="fc-v6-head"><div><strong>${feed}</strong><span>Feeding Down</span></div><div><strong>${clean}</strong><span>Cleaned</span></div><div><strong>${notes}</strong><span>Notes</span></div></div><button class="btn secondary" onclick="fcShareStatus()">Share Status Report</button>`;let q=document.getElementById("fcQueue");if(!q)return;q.innerHTML=`<div class="fc-v6-cols"><span>Feeder</span><span>Feed Down</span><span>Level</span><span>Cleaned</span><span>Notes</span></div>`+["Aquatica","SeaWorld","Discovery Cove"].map(p=>{let z=visible.filter(x=>x.property===p);if(!z.length)return"";return `<div class="fc-v6-prop"><div class="fc-v6-prop-head">${p}</div>`+z.map(x=>{let r=fcRow(x.feeder_key)||{};return `<div class="fc-v6-row"><div class="fc-v6-id"><strong>${x.feeder_id}</strong><small>${x.pool_name}</small></div><button class="fc-v6-btn feed ${r.feed_down_at&&!r.cleaned_at?"on":""}" onclick="fcV6Feed('${x.feeder_key}')">Feed Down${r.feed_down_at?`<small>${fcFmt(r.feed_down_at)}</small>`:""}</button><select class="fc-v6-level" onchange="fcV6Level('${x.feeder_key}',this.value)"><option value="">Level</option>${FC_LEVELS.map(v=>`<option ${r.feed_level===v?"selected":""}>${v}</option>`).join("")}</select><button class="fc-v6-btn clean ${r.cleaned_at?"on":""}" onclick="fcV6Clean('${x.feeder_key}')">Cleaned${r.cleaned_at?`<small>${fcFmt(r.cleaned_at)}</small>`:""}</button><button class="fc-v6-btn note ${r.note?.trim()?"on":""}" onclick="fcNote('${x.feeder_key}')">${r.note?.trim()?"Note ✓":"Note"}</button></div>`}).join("")+`</div>`}).join("")}
+document.querySelectorAll(".feeder-filter button").forEach(b=>b.onclick=()=>{FC.property=b.dataset.fprop;document.querySelectorAll(".feeder-filter button").forEach(x=>x.classList.toggle("active",x===b));fcRender()});
+window.fcShareStatus=fcShareStatus;
+fcLoad();
+
+/* v6.2 shared-board auto refresh */
+let fcRefreshInFlight=false;
+async function fcRefreshShared(){
+  if(fcRefreshInFlight) return;
+  fcRefreshInFlight=true;
+  try{ await fcLoad(); } finally { fcRefreshInFlight=false; }
+}
+function fcFeederViewVisible(){
+  const v=document.getElementById("view-feeders");
+  return !!v && !v.classList.contains("hidden");
+}
+document.querySelectorAll('nav button[data-view="feeders"]').forEach(btn=>{
+  btn.addEventListener("click",()=>setTimeout(fcRefreshShared,0));
+});
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible" && fcFeederViewVisible()){if(fcViewMode==="history")fcLoadHistory();else fcRefreshShared();}
+});
+window.addEventListener("pageshow",()=>{
+  if(fcFeederViewVisible()){if(fcViewMode==="history")fcLoadHistory();else fcRefreshShared();}
+});
+
+
+let fcViewMode="current";
+async function fcLoadHistory(){
+ const box=document.getElementById("fcHistoryList"); if(!box)return;
+ box.innerHTML='<div class="muted">Loading shared cleaning history…</div>';
+ try{
+  let a=await fetch(`${PCL_SB_URL}/rest/v1/feeder_cleanings?select=*&cleaned_at=not.is.null&order=cleaned_at.desc&limit=500`,{headers:fcHeaders(),cache:"no-store"});
+  if(!a.ok)throw new Error(await a.text()); let rows=await a.json();
+  if(!rows.length){box.innerHTML='<div class="muted">No completed feeder cleanings recorded yet.</div>';return}
+  let groups={}; rows.forEach(r=>{let k=new Date(r.cleaned_at).toLocaleString([],{month:"long",year:"numeric"});(groups[k]??=[]).push(r)});
+  box.innerHTML=Object.entries(groups).map(([month,rs])=>`<div class="fc-history-month"><h3>${month}</h3>${rs.map(r=>{let dur=fcElapsed(r.feed_down_at,r.cleaned_at);return `<div class="fc-history-row"><div><strong>${r.pool_id}-${r.feeder_letter}</strong><small>${r.property}${r.pool_name?` • ${r.pool_name}`:""}</small></div><div><strong>${fcFmt(r.cleaned_at)}</strong><small>${dur?`Feed-down ${dur}`:"No feed-down duration"}</small></div>${r.note?.trim()?`<div class="fc-history-note">${r.note}</div>`:""}</div>`}).join("")}</div>`).join("");
+ }catch(e){console.error(e);box.innerHTML='<div class="muted">Could not load cleaning history.</div>'}
+}
+function fcSetView(mode){
+ fcViewMode=mode;
+ document.getElementById("fcCurrent").classList.toggle("hidden",mode!=="current");
+ document.getElementById("fcHistoryView").classList.toggle("hidden",mode!=="history");
+ document.querySelectorAll(".fc-subtabs [data-fctab]").forEach(b=>b.classList.toggle("active",b.dataset.fctab===mode));
+ if(mode==="history")fcLoadHistory();else fcRefreshShared();
+}
+document.querySelectorAll(".fc-subtabs [data-fctab]").forEach(b=>b.addEventListener("click",()=>fcSetView(b.dataset.fctab)));
+function fcSyncPageChrome(){
+  const feeder=document.getElementById("view-feeders");
+  document.body.classList.toggle("feeder-view", feeder && !feeder.classList.contains("hidden"));
+}
+const fcViewObserver=new MutationObserver(fcSyncPageChrome);
+document.querySelectorAll("main > section").forEach(s=>fcViewObserver.observe(s,{attributes:true,attributeFilter:["class"]}));
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>setTimeout(fcSyncPageChrome,0)));
+fcSyncPageChrome();
+
+</script>
+
+<script>
+window.openMaintenanceView=function(view){
+ const button=document.querySelector('nav button[data-view="'+view+'"]');if(button)button.click();
+};
+openMaintenanceView(location.hash.slice(1)||'spot');
+function reportHeight(){parent.postMessage({type:'maintenance-height',height:Math.ceil(document.querySelector(".app").getBoundingClientRect().height)+24},location.origin)}
+new ResizeObserver(reportHeight).observe(document.querySelector('.app'));
+window.addEventListener('load',reportHeight);
+</script>
+<script>
+window.setFieldPool=function(property,id){
+ if($("property").value===property && selectedPool()?.id===id)return;
+ $("property").value=property;fillPools();const p=POOLS.find(p=>p.property===property&&p.id===id);if(p){$("pool").value=p.key;updatePoolPill()}
+};
+["property","pool"].forEach(id=>$(id).addEventListener("change",()=>{const p=selectedPool();if(p)parent.postMessage({type:"field-pool",property:p.property,id:p.id},location.origin)}));
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>parent.postMessage({type:"field-view",view:b.dataset.view},location.origin)));
+</script>
+</body>
+</html>
+

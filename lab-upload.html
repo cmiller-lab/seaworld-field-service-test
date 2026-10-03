@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#041b3d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Submit Lab Sheet</title>
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--page:#020b18;--surface:#071427;--surface2:#0b1c34;--line:#28476e;--text:#f4f8ff;--muted:#aab9cc;--cyan:#38d7ff;--green:#52ef6e;--amber:#ffb51c;--red:#ff4654}
+*{box-sizing:border-box}
+html{background:var(--page)}
+body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at 50% -8%,#102f58 0,#061426 32%,#020b18 70%)}
+.shell{width:min(680px,calc(100% - 18px));margin:10px auto 26px;padding-bottom:env(safe-area-inset-bottom)}
+.hero{background:linear-gradient(135deg,#0f172a,#172554 58%,#0b4f8a);border:1px solid #263756;border-radius:16px;padding:19px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.eyebrow{font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;color:#7dd3fc}
+h1{font-size:clamp(27px,7vw,40px);margin:6px 0}
+.hero p{margin:0;color:#cbd5e1;line-height:1.45}
+.card{margin-top:12px;background:linear-gradient(180deg,rgba(23,32,51,.98),rgba(15,23,42,.98));border:1px solid #2a3a55;border-radius:16px;padding:16px}
+label{display:block;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px}
+input[type=file],input[type=text]{width:100%;min-height:52px;border:1px solid #3b4a63;background:#0f172a;color:var(--text);border-radius:11px;padding:11px;font-size:16px}
+.field+.field{margin-top:15px}
+.preview{margin-top:14px;border:1px dashed #345075;border-radius:13px;min-height:220px;display:grid;place-items:center;overflow:hidden;background:#030912}
+.preview img{display:block;max-width:100%;max-height:58vh;object-fit:contain}
+.preview span{color:var(--muted);text-align:center;padding:25px;line-height:1.5}
+.submit{width:100%;min-height:58px;margin-top:15px;border:1px solid #2678b6;border-radius:12px;background:#0b4f8a;color:#fff;font-size:19px;font-weight:900}
+.submit:disabled{opacity:.5}
+.message{display:none;margin-top:12px;padding:13px 14px;border-radius:11px;font-weight:750;line-height:1.4}
+.message.show{display:block}
+.message.info{background:#0f2741;border:1px solid #24547a;color:#bae6fd}
+.message.success{background:#0f3320;border:1px solid #25643d;color:#bbf7d0}
+.message.error{background:#321116;border:1px solid #7f1d1d;color:#fecaca}
+.note{margin-top:12px;color:#8293aa;font-size:12px;line-height:1.5;text-align:center}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="hero">
+    <div class="eyebrow">SeaWorld Water Quality</div>
+    <h1>Submit Lab Sheet</h1>
+    <p>Take one clear photo of the current daily worksheet. Make sure all edges of the page and handwritten results are visible.</p>
+  </section>
+
+  <form class="card" id="uploadForm">
+    <div class="field">
+      <label for="photo">Lab sheet photograph</label>
+      <input id="photo" name="photo" type="file" accept="image/*" capture="environment" required>
+    </div>
+    <div class="field">
+      <label for="device">Submitting device</label>
+      <input id="device" name="device" type="text" value="Water Quality iPad" autocomplete="off">
+    </div>
+    <div class="preview" id="preview"><span>Photo preview will appear here.</span></div>
+    <button class="submit" id="submitButton" type="submit">Submit Lab Sheet</button>
+    <div class="message info show" id="message">Phase 1 demo mode is enabled. The page can test the iPad camera workflow, but it will not transmit or store the photograph until the secure backend is connected.</div>
+  </form>
+
+  <div class="note">Original photographs will be retained by the secure backend once Phase 2 is enabled. No service-role credentials belong in this page.</div>
+</main>
+
+<script src="lab-config.js"></script>
+<script src="lab-api.js"></script>
+<script>
+(() => {
+  "use strict";
+  const photo = document.getElementById("photo");
+  const preview = document.getElementById("preview");
+  const form = document.getElementById("uploadForm");
+  const message = document.getElementById("message");
+  const submitButton = document.getElementById("submitButton");
+  let objectUrl = "";
+
+  function showMessage(text, type) {
+    message.className = `message ${type} show`;
+    message.textContent = text;
+  }
+
+  photo.addEventListener("change", () => {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    const file = photo.files && photo.files[0];
+    if (!file) {
+      preview.innerHTML = "<span>Photo preview will appear here.</span>";
+      return;
+    }
+    objectUrl = URL.createObjectURL(file);
+    const img = document.createElement("img");
+    img.src = objectUrl;
+    img.alt = "Selected lab sheet";
+    preview.replaceChildren(img);
+  });
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const file = photo.files && photo.files[0];
+    if (!file) {
+      showMessage("Take or choose a photo first.", "error");
+      return;
+    }
+
+    if (!/^image\//.test(file.type || "")) {
+      showMessage("The selected file is not recognized as an image.", "error");
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting…";
+    showMessage("Submitting photograph…", "info");
+
+    try {
+      const result = await window.LabSheetsAPI.uploadSubmission({
+        file,
+        deviceLabel: document.getElementById("device").value.trim()
+      });
+      showMessage(`Lab sheet submitted successfully${result.submissionId ? ` • ${result.submissionId}` : ""}.`, "success");
+      form.reset();
+      document.getElementById("device").value = window.LAB_SHEETS_CONFIG.defaultDeviceLabel || "Water Quality iPad";
+      preview.innerHTML = "<span>Photo submitted. Ready for the next lab round.</span>";
+    } catch (error) {
+      showMessage(error.message || "Unable to submit the photograph.", "error");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit Lab Sheet";
+    }
+  });
+})();
+</script>
+</body>
+</html>
+

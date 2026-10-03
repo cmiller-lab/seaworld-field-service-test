@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#041b3d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SeaWorld Lab Sheets</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --page:#020b18;--surface:#071427;--surface2:#0b1c34;--surface3:#102541;
+  --line:#17365c;--line2:#28476e;--text:#f4f8ff;--muted:#aab9cc;
+  --cyan:#38d7ff;--green:#52ef6e;--amber:#ffb51c;--red:#ff4654;
+}
+*{box-sizing:border-box}
+html{background:var(--page)}
+body{
+  margin:0;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:radial-gradient(circle at 50% -8%,#102f58 0,#061426 29%,#020b18 62%,#010711 100%);
+  min-height:100vh;
+}
+button,a{font:inherit}
+.shell{width:min(1120px,calc(100% - 18px));margin:10px auto 28px;padding-bottom:env(safe-area-inset-bottom)}
+.hero{
+  background:linear-gradient(135deg,#0f172a,#172554 58%,#0b4f8a);
+  border:1px solid #263756;border-radius:16px;padding:18px;
+  box-shadow:0 16px 40px rgba(0,0,0,.35)
+}
+.hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.eyebrow{font-size:11px;font-weight:850;letter-spacing:.1em;text-transform:uppercase;color:#7dd3fc}
+h1{font-size:clamp(25px,6vw,38px);margin:5px 0 6px}
+.hero p{margin:0;color:#cbd5e1;line-height:1.45}
+.back{
+  display:inline-flex;align-items:center;gap:7px;color:#dbeafe;text-decoration:none;
+  border:1px solid #3b4a63;background:#172033;border-radius:10px;padding:10px 12px;font-weight:800;white-space:nowrap
+}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media(max-width:760px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:linear-gradient(180deg,rgba(23,32,51,.98),rgba(15,23,42,.98));border:1px solid #2a3a55;border-radius:14px;padding:14px}
+.kpi-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:850}
+.kpi-value{font-size:24px;font-weight:900;margin-top:6px}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.toolbar{
+  display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:12px;
+  padding:12px;background:linear-gradient(180deg,rgba(23,32,51,.98),rgba(15,23,42,.98));
+  border:1px solid #2a3a55;border-radius:14px
+}
+.toolbar-left{display:flex;gap:8px;flex-wrap:wrap}
+.control,select{
+  min-height:44px;border:1px solid #3b4a63;background:#0f172a;color:var(--text);
+  border-radius:10px;padding:9px 11px;font-weight:750
+}
+.control{cursor:pointer}
+.control.primary{background:#0b4f8a;border-color:#2678b6}
+.status-strip{margin-top:12px;padding:12px 14px;border-radius:12px;border:1px solid #24547a;background:#0f2741;color:#bae6fd;font-size:13px}
+.status-strip.warning{background:#2b2109;border-color:#6b5210;color:#fde68a}
+.status-strip.error{background:#321116;border-color:#7f1d1d;color:#fecaca}
+.history{margin-top:12px;display:grid;gap:10px}
+.entry{
+  background:linear-gradient(180deg,rgba(23,32,51,.98),rgba(15,23,42,.98));
+  border:1px solid #2a3a55;border-radius:15px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.22)
+}
+.entry-main{padding:14px}
+.entry-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.time{font-size:20px;font-weight:900}
+.date{font-size:12px;color:var(--muted);margin-top:2px}
+.badge{font-size:11px;font-weight:850;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:6px 9px;white-space:nowrap}
+.badge.ready{background:#0f3320;border:1px solid #25643d;color:#86efac}
+.badge.processing{background:#2c260b;border:1px solid #675c17;color:#fde68a}
+.badge.review{background:#351318;border:1px solid #7f1d1d;color:#fecaca}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:13px}
+@media(max-width:680px){.meta{grid-template-columns:1fr}}
+.meta-item{background:#0d1829;border:1px solid #22334d;border-radius:10px;padding:10px}
+.meta-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#8192aa;font-weight:850}
+.meta-value{margin-top:4px;font-size:13px;font-weight:750;overflow-wrap:anywhere}
+.entry-actions{display:flex;border-top:1px solid #243047}
+.entry-actions button{flex:1;border:0;background:#101827;color:#7dd3fc;padding:13px;font-weight:850;cursor:pointer}
+.entry-actions button+button{border-left:1px solid #243047}
+.entry-actions button:disabled{color:#64748b;cursor:not-allowed}
+.empty{padding:34px 18px;text-align:center;border:1px dashed #345075;border-radius:14px;color:var(--muted)}
+.empty strong{display:block;color:var(--text);font-size:18px;margin-bottom:6px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:12px;z-index:50}
+.modal.open{display:flex}
+.modal-card{width:min(980px,100%);max-height:94vh;overflow:auto;background:#071427;border:1px solid #28476e;border-radius:15px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid #243047}
+.modal-head strong{font-size:16px}
+.modal-close{border:1px solid #3b4a63;background:#172033;color:#fff;border-radius:9px;padding:9px 11px;font-weight:850}
+.photo-wrap{min-height:360px;display:grid;place-items:center;background:#030912;padding:14px}
+.photo-wrap img{max-width:100%;max-height:75vh;object-fit:contain;border-radius:8px}
+.photo-placeholder{text-align:center;color:var(--muted);max-width:420px;line-height:1.5}
+.footer{margin-top:14px;text-align:center;color:#64748b;font-size:12px}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow">Water Quality Operations</div>
+        <h1>SeaWorld Lab Sheets</h1>
+      </div>
+      <a class="back" href="index.html">← Console</a>
+    </div>
+    <p>Original daily water-quality worksheets submitted from the Water Quality iPad. The photograph remains the authoritative source record.</p>
+  </section>
+
+  <section class="summary-grid" aria-label="Lab sheet summary">
+    <div class="kpi"><div class="kpi-label">Latest Round</div><div class="kpi-value" id="latestRound">—</div><div class="kpi-sub" id="latestRoundSub">No data</div></div>
+    <div class="kpi"><div class="kpi-label">Today</div><div class="kpi-value" id="todayCount">0</div><div class="kpi-sub">submissions</div></div>
+    <div class="kpi"><div class="kpi-label">Needs Review</div><div class="kpi-value" id="reviewCount">0</div><div class="kpi-sub">current records</div></div>
+    <div class="kpi"><div class="kpi-label">Connection</div><div class="kpi-value" id="connectionState">Demo</div><div class="kpi-sub" id="connectionSub">backend not connected</div></div>
+  </section>
+
+  <section class="toolbar">
+    <div class="toolbar-left">
+      <select id="statusFilter" aria-label="Filter by status">
+        <option value="all">All statuses</option>
+        <option value="ready">Ready</option>
+        <option value="processing">Processing</option>
+        <option value="review">Needs review</option>
+      </select>
+      <select id="dateFilter" aria-label="Filter by date">
+        <option value="all">All recent</option>
+        <option value="today">Today</option>
+      </select>
+    </div>
+    <button class="control primary" id="refreshButton">Refresh</button>
+  </section>
+
+  <div class="status-strip warning" id="statusStrip">Phase 1 demo mode: no customer photographs are being stored or transmitted yet.</div>
+  <section class="history" id="history" aria-live="polite"></section>
+  <div class="footer">Phase 1 • Technician lab-sheet intake proof of concept</div>
+</main>
+
+<div class="modal" id="photoModal" role="dialog" aria-modal="true" aria-label="Original lab sheet">
+  <div class="modal-card">
+    <div class="modal-head"><strong id="modalTitle">Original photograph</strong><button class="modal-close" id="modalClose">Close</button></div>
+    <div class="photo-wrap" id="photoWrap"></div>
+  </div>
+</div>
+
+<script src="lab-config.js"></script>
+<script src="lab-api.js"></script>
+<script>
+(() => {
+  "use strict";
+  const config = window.LAB_SHEETS_CONFIG;
+  const API = window.LabSheetsAPI;
+  let submissions = [];
+
+  const $ = id => document.getElementById(id);
+  const history = $("history");
+  const statusFilter = $("statusFilter");
+  const dateFilter = $("dateFilter");
+
+  function fmtDateTime(iso) {
+    const d = new Date(iso);
+    return {
+      time: d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      date: d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: "numeric" })
+    };
+  }
+
+  function isToday(iso) {
+    const d = new Date(iso), n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  }
+
+  function statusLabel(status) {
+    return ({ ready: "Ready", processing: "Processing", review: "Needs review" })[status] || "Unknown";
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  }
+
+  function filtered() {
+    return submissions.filter(item => {
+      if (statusFilter.value !== "all" && item.status !== statusFilter.value) return false;
+      if (dateFilter.value === "today" && !isToday(item.submittedAt)) return false;
+      return true;
+    });
+  }
+
+  function renderSummary() {
+    const sorted = [...submissions].sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    const latest = sorted[0];
+    if (latest) {
+      const f = fmtDateTime(latest.submittedAt);
+      $("latestRound").textContent = f.time;
+      $("latestRoundSub").textContent = latest.roundLabel || f.date;
+    } else {
+      $("latestRound").textContent = "—";
+      $("latestRoundSub").textContent = "No data";
+    }
+    $("todayCount").textContent = submissions.filter(x => isToday(x.submittedAt)).length;
+    $("reviewCount").textContent = submissions.filter(x => x.status === "review").length;
+    $("connectionState").textContent = config.demoMode ? "Demo" : "Live";
+    $("connectionSub").textContent = config.demoMode ? "backend not connected" : "secure API connected";
+  }
+
+  function render() {
+    renderSummary();
+    const rows = filtered().sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    if (!rows.length) {
+      history.innerHTML = '<div class="empty"><strong>No submissions found</strong>Try a different filter or refresh the page.</div>';
+      return;
+    }
+
+    history.innerHTML = rows.map(item => {
+      const f = fmtDateTime(item.submittedAt);
+      const hasPhoto = Boolean(API.getImageUrl(item));
+      return `
+        <article class="entry">
+          <div class="entry-main">
+            <div class="entry-top">
+              <div>
+                <div class="time">${escapeHtml(f.time)}</div>
+                <div class="date">${escapeHtml(item.roundLabel || f.date)}</div>
+              </div>
+              <span class="badge ${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span>
+            </div>
+            <div class="meta">
+              <div class="meta-item"><div class="meta-label">Site</div><div class="meta-value">${escapeHtml(item.site || config.siteLabel)}</div></div>
+              <div class="meta-item"><div class="meta-label">Submitted By</div><div class="meta-value">${escapeHtml(item.device || "Unknown device")}</div></div>
+              <div class="meta-item"><div class="meta-label">Submission ID</div><div class="meta-value">${escapeHtml(item.id)}</div></div>
+            </div>
+          </div>
+          <div class="entry-actions">
+            <button data-view="${escapeHtml(item.id)}" ${hasPhoto ? "" : "disabled"}>${hasPhoto ? "View Original" : "Photo unavailable in demo"}</button>
+          </div>
+        </article>`;
+    }).join("");
+  }
+
+  async function load() {
+    $("refreshButton").disabled = true;
+    $("refreshButton").textContent = "Refreshing…";
+    try {
+      const result = await API.listSubmissions();
+      submissions = Array.isArray(result.submissions) ? result.submissions : [];
+      $("statusStrip").className = result.demo ? "status-strip warning" : "status-strip";
+      $("statusStrip").textContent = result.demo
+        ? "Phase 1 demo mode: no customer photographs are being stored or transmitted yet."
+        : `Live lab-sheet history loaded • ${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`;
+      render();
+    } catch (error) {
+      $("statusStrip").className = "status-strip error";
+      $("statusStrip").textContent = error.message || "Unable to load lab sheets.";
+      submissions = [];
+      render();
+    } finally {
+      $("refreshButton").disabled = false;
+      $("refreshButton").textContent = "Refresh";
+    }
+  }
+
+  function openPhoto(item) {
+    const url = API.getImageUrl(item);
+    if (!url) return;
+    $("modalTitle").textContent = `${item.roundLabel || "Lab Sheet"} • ${fmtDateTime(item.submittedAt).time}`;
+    $("photoWrap").innerHTML = `<img src="${escapeHtml(url)}" alt="Original submitted lab worksheet">`;
+    $("photoModal").classList.add("open");
+  }
+
+  history.addEventListener("click", event => {
+    const button = event.target.closest("[data-view]");
+    if (!button) return;
+    const item = submissions.find(x => x.id === button.dataset.view);
+    if (item) openPhoto(item);
+  });
+
+  function closeModal() {
+    $("photoModal").classList.remove("open");
+    $("photoWrap").innerHTML = "";
+  }
+
+  $("modalClose").addEventListener("click", closeModal);
+  $("photoModal").addEventListener("click", e => { if (e.target === $("photoModal")) closeModal(); });
+  $("refreshButton").addEventListener("click", load);
+  statusFilter.addEventListener("change", render);
+  dateFilter.addEventListener("change", render);
+
+  load();
+  if (!config.demoMode && config.refreshIntervalMs > 0) setInterval(load, config.refreshIntervalMs);
+})();
+</script>
+</body>
+</html>
+
