@@ -11,7 +11,7 @@
 <link href="manifest.webmanifest" rel="manifest"/>
 <link href="icon-192.png" rel="apple-touch-icon"/>
 <link href="icon-192.png" rel="icon"/>
-<title>SeaWorld Water Chemistry Console</title>
+<title>SeaWorld Field Service TEST</title>
 <style>
 :root{--navy:#17365d;--blue:#d9eaf7;--green:#e2f0d9;--red:#fce4d6;--ink:#1f2937;--muted:#667085;--border:#cfd8e3;--white:#fff;--light:#f7fafc;--error:#b42318;--errorbg:#fef3f2}
 *{box-sizing:border-box}
@@ -3736,12 +3736,12 @@ loadIncidentDraft();updateIncidentTimer();setInterval(updateIncidentTimer,1000);
   document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!modal.hidden){modal.hidden=true;document.body.style.overflow='';}});
 
   try{
-    localStorage.setItem('swChemInstalledVersion','15.11');
+    localStorage.setItem('fieldTestInstalledVersion','15.11');
   }catch(error){}
 
   if('caches' in window){
     caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(key){return key!=='seaworld-chemistry-console-v15.11';}).map(function(key){return caches.delete(key);}));
+      return Promise.all(keys.filter(function(key){return key.startsWith('seaworld-chemistry-console-field-service-test-') && key!=='seaworld-chemistry-console-field-service-test-v2';}).map(function(key){return caches.delete(key);}));
     }).then(function(){
       setText('versionUpdateStatus','Version 15.11 active • old caches cleared');
     }).catch(function(){
