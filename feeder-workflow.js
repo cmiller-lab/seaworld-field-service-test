@@ -10,10 +10,11 @@ function fwEffective(events){const cancelled=new Set(events.filter(e=>e.action==
 function fwProjection(key){
  const all=FW.events.filter(e=>e.feeder_key===key),events=fwEffective(all).sort((a,b)=>new Date(a.occurred_at)-new Date(b.occurred_at)||new Date(a.recorded_at)-new Date(b.recorded_at));
  const cleans=events.filter(e=>e.action==='cleaned'),last=cleans.at(-1),monthCleans=cleans.filter(e=>fwDay(e.occurred_at).slice(0,7)===FW.month);
- const starts=events.filter(e=>e.action==='feed_down'),start=starts.at(-1),cancel=events.filter(e=>e.action==='correction'&&e.payload?.cancel_feed_down).at(-1);
+ const reset=all.filter(e=>e.payload?.status_reset).sort((a,b)=>new Date(a.recorded_at)-new Date(b.recorded_at)).at(-1),working=events.filter(e=>!reset||new Date(e.recorded_at)>new Date(reset.recorded_at));
+ const starts=working.filter(e=>e.action==='feed_down'),start=starts.at(-1),cancel=working.filter(e=>e.action==='correction'&&e.payload?.cancel_feed_down).at(-1);
  const feeding=!!start&&(!last||new Date(start.occurred_at)>new Date(last.occurred_at))&&(!cancel||new Date(start.occurred_at)>new Date(cancel.occurred_at));
- const levels=events.filter(e=>e.action==='level'&&start&&new Date(e.occurred_at)>=new Date(start.occurred_at));
- return {last,cleans,monthCleans,start,feeding,level:levels.at(-1)?.payload?.level||start?.payload?.level||'100%',levelAt:levels.at(-1)?.occurred_at||start?.occurred_at,note:events.filter(e=>e.action==='note').at(-1),events:all};
+ const levels=working.filter(e=>e.action==='level'&&start&&new Date(e.occurred_at)>=new Date(start.occurred_at));
+ return {reset,currentClean:working.filter(e=>e.action==='cleaned').at(-1),last,cleans,monthCleans,start,feeding,level:levels.at(-1)?.payload?.level||start?.payload?.level||'100%',levelAt:levels.at(-1)?.occurred_at||start?.occurred_at,note:working.filter(e=>e.action==='note').at(-1),events:all};
 }
 function fwTech(){return document.getElementById('fwTechnician').value.trim()}
 function fwNeedTech(){if(fwTech())return true;const el=document.getElementById('fwTechnician');el.focus();el.setCustomValidity('Enter your technician name once before recording work.');el.reportValidity();return false}
@@ -25,8 +26,8 @@ function fcRender(){fwRender()}
 async function fwLoad(){
  if(FW.loading)return;if(!FW.manualMonth)FW.month=fwDay().slice(0,7);FW.loading=true;fwStatus('Refreshing shared activity…');
  try{let rows=[],offset=0;while(true){const r=await fetch(`${PCL_SB_URL}/rest/v1/feeder_activity?select=*&order=occurred_at.asc,id.asc&limit=1000&offset=${offset}`,{headers:pclHeaders(),cache:'no-store'});if(!r.ok)throw Error(await r.text());const page=await r.json();rows.push(...page);if(page.length<1000)break;offset+=page.length}
- FW.events=rows;FW.loaded=true;fwRender();fwStatus('Shared data refreshed '+new Date().toLocaleTimeString());
- }catch(e){console.error(e);fwStatus('Refresh failed — '+(FW.loaded?'showing previously loaded records.':'records unavailable. Do not infer cleaning status.')+' Tap Refresh to retry.',true)}finally{FW.loading=false}
+ FW.events=rows;FW.loaded=true;fwRender();fwStatus('Shared data refreshed '+new Date().toLocaleTimeString());return true;
+ }catch(e){console.error(e);fwStatus('Refresh failed — '+(FW.loaded?'showing previously loaded records.':'records unavailable. Do not infer cleaning status.')+' Tap Refresh to retry.',true);return false}finally{FW.loading=false}
 }
 function fwMatches(x){return FW.property==='All'||x.property===FW.property}
 function fwActionText(e){const p=e.payload||{};return({feed_down:'Feed-down started',level:'Level checked: '+(p.level||'—'),cleaned:'Cleaning completed',note:'Note: '+(p.note||''),correction:'Correction: '+(p.reason||'')})[e.action]||e.action}
@@ -57,7 +58,7 @@ function fwRender(){
 }
 function fwPanel(action,key){fwCapture();if(FW.panels[key]===action){delete FW.panels[key]}else{FW.panels[key]=action;FW.drafts[key]='';if(action==='backdate'){const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());FW.drafts[key]=now.toISOString().slice(0,16)}}fwRender()}
 async function fwSaveAction(action,key,payload={},at=null,retry=null){
- if(FW.busy||!FW.loaded)return;if(!fwNeedTech())return;fwCapture();const x=fwInventory().find(x=>x.feeder_key===key);if(!x)return;
+ if(FW.busy||!FW.loaded)return;if(localStorage.getItem('feeder.pendingReset')){toast('Retry the unconfirmed status reset first.');return}if(!fwNeedTech())return;fwCapture();const x=fwInventory().find(x=>x.feeder_key===key);if(!x)return;
  if(!navigator.onLine){FW.feedback[key]={text:'Offline — connect before saving.',error:true};FW.pending[key]={action,key,payload,at};fwRender();return}
  const tech=fwTech(),signature=JSON.stringify({action,key,tech,payload,at});let saved;try{saved=JSON.parse(localStorage.getItem('feeder.pendingRequest')||'null')}catch{}
  // A failed request must be resolved before another operation replaces its retry identity.
@@ -81,16 +82,41 @@ async function fwClick(action,key,button){
  return fwSaveAction(panel==='note'?'note':'correction',key,panel==='note'?{note:text}:{correction_of:fwProjection(key).last?.id,reason:text})}
  return fwSaveAction(action,key,action==='level'?{level:button.dataset.level}:{});
 }
+function fwStatusReport(scoped=fwInventory().filter(fwMatches)){
+ const lines=['FEEDER STATUS',new Date().toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),''];
+ for(const property of [...new Set(scoped.map(x=>x.property))]){
+  const rows=scoped.filter(x=>x.property===property).map(x=>({x,s:fwProjection(x.feeder_key)})).filter(({s})=>s.feeding||s.currentClean);
+  if(!rows.length)continue;lines.push(property.toUpperCase());
+  for(const heading of ['READY TO CLEAN','FEEDING DOWN','CLEANED']){
+   const group=rows.filter(({s})=>heading==='READY TO CLEAN'?s.feeding&&s.level==='Empty':heading==='FEEDING DOWN'?s.feeding&&s.level!=='Empty':!s.feeding&&s.currentClean).sort((a,b)=>(parseInt(a.s.level)||0)-(parseInt(b.s.level)||0)||a.x.feeder_id.localeCompare(b.x.feeder_id));
+   if(!group.length)continue;lines.push(heading);for(const {x,s}of group)lines.push('• '+x.feeder_id+(heading==='FEEDING DOWN'?' — '+s.level:''));
+  }lines.push('');
+ }
+ if(lines.length===3)lines.push('No current feeder statuses.');return lines.join('\n').trim();
+}
+async function fwResetAll(){
+ if(FW.busy||!FW.loaded||!fwNeedTech())return;if(FW.loading){document.getElementById('fwResetStatus').textContent='Wait for the refresh to finish, then retry.';return}
+ if(!navigator.onLine){document.getElementById('fwResetStatus').textContent='Connect before clearing statuses.';return}
+ if(localStorage.getItem('feeder.pendingRequest')){document.getElementById('fwResetStatus').textContent='Resolve the unconfirmed feeder save first.';return}
+ let request;try{request=JSON.parse(localStorage.getItem('feeder.pendingReset')||'null')}catch{}
+ if(!request){request={id:crypto.randomUUID(),technician:fwTech()};localStorage.setItem('feeder.pendingReset',JSON.stringify(request))}
+ FW.busy=true;fwRender();document.getElementById('fwResetConfirm').disabled=true;document.getElementById('fwResetStatus').textContent='Clearing all current statuses…';
+ try{const r=await fetch(`${PCL_SB_URL}/rest/v1/rpc/reset_feeder_statuses`,{method:'POST',headers:pclHeaders(),body:JSON.stringify({p_request_id:request.id,p_technician:request.technician,p_feeders:fwInventory()})});if(!r.ok)throw Error(await r.text());await r.json();FW.undo={};FW.feedback={};FW.pins.clear();FW.view='all';FW.property='All';document.getElementById('fwProperty').value='All';if(!await fwLoad())throw Error('Reset saved but refresh failed');localStorage.removeItem('feeder.pendingReset');document.getElementById('fwResetStatus').textContent='All current statuses cleared. Activity logs and monthly cleaning totals retained.';
+ }catch(e){console.error(e);document.getElementById('fwResetStatus').textContent='Reset or refresh not confirmed. Retry uses the same request; logs are preserved.'}
+ finally{FW.busy=false;document.getElementById('fwResetConfirm').disabled=false;fwRender()}
+}
 async function fwShare(daily=false){
  if(!FW.loaded){toast('Refresh shared records before sharing.');return}
  const scoped=fwInventory().filter(fwMatches),keys=new Set(scoped.map(x=>x.feeder_key));let lines;
  if(daily){const rows=FW.events.filter(e=>keys.has(e.feeder_key)&&(fwDay(e.occurred_at)===FW.date||e.action==='correction'&&fwDay(e.recorded_at)===FW.date)).sort((a,b)=>new Date(a.occurred_at)-new Date(b.occurred_at));lines=['FEEDER DAILY ACTIVITY — '+FW.date,...rows.map(e=>`${fwFmt(e.occurred_at)} | ${e.property} | ${e.pool_id}-${e.feeder_letter} | ${fwActionText(e)} | ${e.technician}`)];}
- else{lines=['FEEDER STATUS — '+FW.month,new Date().toLocaleString(),...scoped.map(x=>{const s=fwProjection(x.feeder_key);return `${x.property} | ${x.feeder_id} | ${s.monthCleans.length?'Completed':'Remaining'} | ${s.feeding?'Feeding down '+s.level:'No active feed-down'} | Last cleaned: ${s.last?fwFmt(s.last.occurred_at):'Never recorded'}`})]}
+ else{lines=fwStatusReport(scoped).split('\n')}
  const text=lines.join('\n');try{if(navigator.share)await navigator.share({title:lines[0],text});else{await navigator.clipboard.writeText(text);toast('Report copied.')}}catch(e){if(e.name!=='AbortError')toast('Could not share report.')}
 }
 window.setFeederPool=()=>{};
 document.getElementById('fwTechnician').value=localStorage.getItem('fieldlive.pcl.tech')||document.getElementById('tech').value||'';
 document.getElementById('fwTechnician').addEventListener('input',e=>{e.target.setCustomValidity('');localStorage.setItem('fieldlive.pcl.tech',e.target.value.trim());document.getElementById('tech').value=e.target.value.trim()});
+document.getElementById('fwResetConfirm').onclick=fwResetAll;
+if(localStorage.getItem('feeder.pendingReset'))document.getElementById('fwResetStatus').textContent='Previous reset unconfirmed. Open Clear Current Statuses and retry.';
 document.getElementById('fwRefreshBtn').onclick=()=>{FW.pins.clear();fwLoad()};document.getElementById('fwShare').onclick=()=>fwShare();document.getElementById('fwShareDaily').onclick=()=>fwShare(true);
 for(const [id,key]of [['fwMonth','month'],['fwDay','date'],['fwProperty','property']])document.getElementById(id).addEventListener('change',e=>{if(e.target.value){if(key==='month')FW.manualMonth=true;FW[key]=e.target.value;FW.pins.clear();fwRender()}});
 document.getElementById('fwOtherView').addEventListener('change',e=>{if(e.target.value){FW.view=e.target.value;FW.pins.clear();fwRender()}});

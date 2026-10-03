@@ -1,4 +1,4 @@
-const CACHE='seaworld-chemistry-console-field-service-test-v5';
+const CACHE='seaworld-chemistry-console-field-service-test-v6';
 const ASSETS=[
   './feeder-workflow.js', './feeder-workflow.css',
   './',
