@@ -169,7 +169,7 @@ nav button{border:1px solid transparent;border-radius:9px;min-height:44px;color:
 @media(max-width:600px){nav{grid-template-columns:repeat(2,minmax(0,1fr))}.fc-v6-btn,.fc-v6-level{font-size:9px}.fc-v6-id small{font-size:8px}.fc-v6-btn small{font-size:7px}}
 </style><style>
 #selectedPoolPill{display:none}#calibrationPoolSelector{display:none}nav{margin-top:0}nav button[data-view="feeders"]{display:none}nav{grid-template-columns:repeat(3,minmax(0,1fr))}body.feeder-view nav{display:none}.app{padding-bottom:10px}.card{padding:16px}.section-title{font-size:18px}label{font-size:14px}.btn{min-height:56px;font-size:17px}.fc-v6-cols{display:none}.fc-v6-row{display:flex;flex-wrap:wrap;gap:9px;padding:14px}.fc-v6-id{width:100%}.fc-v6-id strong{font-size:20px}.fc-v6-id small{font-size:12px}.fc-v6-btn{flex:1;min-width:90px;font-size:14px;min-height:50px}.fc-v6-btn small{font-size:10px}.fc-v6-level{width:85px;font-size:13px;min-height:50px}.fc-v6-prop-head{font-size:17px;padding:14px}.fc-last-refresh{font-size:12px}.toast{max-width:90%;white-space:normal}
-</style><style>#fcShareStatus{display:none}.version-badge{display:none}.fc-v6-row{border-radius:12px;margin:10px;border:1px solid var(--line)}.fc-v6-id{display:flex;justify-content:space-between;align-items:center;gap:10px}.fc-v6-id small{max-width:65%;text-align:right}</style><link rel="stylesheet" href="feeder-workflow.css">
+</style><style>#fcShareStatus{display:none}.version-badge{display:none}.fc-v6-row{border-radius:12px;margin:10px;border:1px solid var(--line)}.fc-v6-id{display:flex;justify-content:space-between;align-items:center;gap:10px}.fc-v6-id small{max-width:65%;text-align:right}</style><link rel="stylesheet" href="feeder-workflow.css"><link rel="stylesheet" href="calibration-ocr.css">
 </head>
 <body>
 <div class="app">
@@ -215,6 +215,19 @@ nav button{border:1px solid transparent;border-radius:9px;min-height:44px;color:
         </div>
       </div>
 
+<div class="card ocr-panel" id="ocrPanel">
+<h2 class="section-title">Photo readings <small>Field pilot</small></h2>
+<p class="muted">Scan a controller or digital test display, then review and approve. You can always type readings below. Photos stay on this device.</p>
+<div class="ocr-actions"><button type="button" data-ocr-photo="controller">📷 Controller photo</button><button type="button" data-ocr-photo="test">📷 Test kit photo</button></div>
+<input id="ocrFile" type="file" accept="image/*" capture="environment" hidden>
+<p id="ocrStatus" role="status" aria-live="polite">Ready for a photo. First scan downloads the scanner over the internet.</p>
+<div id="ocrEditor" hidden><p class="muted">Drag over the display to crop. Rotate if sideways. Keep the metric labels visible; include the pool name on controller photos.</p><canvas id="ocrCanvas" aria-label="Photo preview; drag to crop"></canvas><div class="ocr-actions"><button id="ocrRotate" type="button">Rotate 90°</button><button id="ocrFull" type="button">Full photo</button><button id="ocrScan" type="button">Scan photo</button><button id="ocrCancel" type="button">Cancel scan</button></div></div>
+<div id="ocrReview" hidden><h3 id="ocrReviewTitle">Review readings</h3><p id="ocrWarning" class="muted"></p>
+<label for="ocrPool">Confirm body of water</label><select id="ocrPool"></select>
+<div id="ocrphRow"><label for="ocrph">pH</label><input id="ocrph" type="number" inputmode="decimal" min="0" max="14" step="0.01"></div>
+<div id="ocrfcRow"><label for="ocrfc">Free chlorine (ppm)</label><input id="ocrfc" type="number" inputmode="decimal" min="0" max="60" step="0.01"></div>
+<div id="ocrorpRow"><label for="ocrorp">ORP (mV)</label><input id="ocrorp" type="number" inputmode="numeric" min="0" max="1200" step="1"></div>
+<details><summary>Recognized text</summary><pre id="ocrRaw"></pre></details><div class="ocr-actions"><button id="ocrApprove" type="button">Approve &amp; apply readings</button><button id="ocrDiscard" type="button">Discard suggestions</button></div></div></div>
       <div class="card">
         <h2 class="section-title">Measurements</h2>
         <div class="measure-head"><span>Metric</span><span>Controller</span><span>Field Test</span><span>Δ Ctrl−Test</span></div>
@@ -413,7 +426,7 @@ $("saveBtn").addEventListener("click",()=>{
   localStorage.setItem("fieldlive.pcl.tech",rec.technician);
   ["controllerPh","testPh","controllerFc","testFc","orpMv","postPh","postFc"].forEach(id=>$(id).value="");
   $("notes").value="";$("calPerformed").checked=false;$("calFields").classList.add("hidden");$("phCal").checked=false;$("fcCal").checked=false;
-  $("observedAt").value=nowLocalInput(); updateDeltas(); renderAll(); toast("Spot check saved locally.");
+  $("observedAt").value=nowLocalInput(); updateDeltas(); renderAll(); toast("Spot check saved locally.");document.dispatchEvent(new Event("spot-check-saved"));
 });
 
 function poolRecords(){
@@ -660,7 +673,7 @@ const FC_FEEDERS=[
 ["Discovery Cove","Tropical River","Tropical River/Resort Pool",8],["Discovery Cove","Oasis","Freshwater Oasis",6],
 ["SeaWorld","Sesame","Sesame",1],["SeaWorld","IF1","Infinity Falls 1",2],["SeaWorld","IF2","Infinity Falls 2",2],["SeaWorld","Kraken","Kraken",2],["SeaWorld","J2A","Journey to Atlantis",4],["SeaWorld","Manta","Manta Pond",2],["SeaWorld","Pipeline","Pipeline",1]];
 </script>
-<script src="feeder-workflow.js"></script>
+<script src="feeder-workflow.js"></script><script src="calibration-ocr.js"></script>
 
 <script>
 window.openMaintenanceView=function(view){
