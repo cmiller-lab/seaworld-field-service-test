@@ -1,4 +1,4 @@
-const CACHE='seaworld-chemistry-console-field-service-test-v9';
+const CACHE='seaworld-chemistry-console-field-service-test-v10';
 const ASSETS=[
   './calibration-ocr.js', './calibration-ocr.css',
   './feeder-workflow.js', './feeder-workflow.css',
