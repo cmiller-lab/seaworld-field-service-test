@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b4f8a">
+  <title>Chemical Inventory | SeaWorld Field Service</title>
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="inventory.css">
+</head>
+<body>
+  <main class="inventory-shell">
+    <header class="inventory-header">
+      <a class="back-link" href="./">‹ Dashboard</a>
+      <div>
+        <p class="eyebrow">SeaWorld Field Service</p>
+        <h1>Chemical Inventory</h1>
+        <p>Weekly pallet counts across all three properties</p>
+      </div>
+      <span id="syncStatus" class="sync-badge" role="status">Connecting…</span>
+    </header>
+
+    <section class="summary-grid" aria-label="Current inventory summary">
+      <article class="summary-card">
+        <span>Briquettes on hand</span>
+        <strong id="totalPallets">—</strong>
+        <small id="totalWeight">24 buckets × 50 lb per pallet</small>
+      </article>
+      <article class="summary-card">
+        <span>Today's progress</span>
+        <strong id="progressCount">0 / 3</strong>
+        <small>properties counted</small>
+      </article>
+    </section>
+
+    <section class="workflow-card">
+      <label for="inventoryTech">Technician</label>
+      <input id="inventoryTech" autocomplete="name" placeholder="Enter your name">
+      <p class="help">Adjust each park to the physical count, then mark that park counted.</p>
+    </section>
+
+    <section id="propertyCards" class="property-list" aria-live="polite"></section>
+
+    <section class="share-card">
+      <button id="shareInventory" class="primary share-button" disabled>Share Inventory</button>
+      <p id="shareHelp">Complete all three properties to share today's inventory.</p>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">Usage</p><h2>Briquette trends</h2></div>
+        <span>1 pallet = 1,200 lb</span>
+      </div>
+      <div id="statsGrid" class="stats-grid"></div>
+    </section>
+
+    <details class="section-card history-card">
+      <summary>Inventory history</summary>
+      <div id="historyLog"></div>
+    </details>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="inventory.js"></script>
+</body>
+</html>
