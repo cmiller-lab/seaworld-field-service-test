@@ -2682,7 +2682,7 @@ window.showTab=function(name){
     if(panel)panel.classList.toggle('active',name===key);
   });
   try{localStorage.setItem('poolToolsTab',name);}catch(error){}
-  window.scrollTo({top:0,behavior:'smooth'});
+  document.querySelector('.wrap').scrollTo({top:0,behavior:'smooth'});
 };
 
 window.showUtility=function(name){
@@ -3596,7 +3596,7 @@ function incidentStep(n){
     byId('incidentStep'+i).classList.toggle('active',i===n);
     document.querySelector('[data-incident-step="'+i+'"]').classList.toggle('active',i===n);
   });
-  window.scrollTo({top:0,behavior:'smooth'});
+  document.querySelector('.wrap').scrollTo({top:0,behavior:'smooth'});
 }
 function selectIncidentChoice(containerId,value){
   document.querySelectorAll('#'+containerId+' button').forEach(function(btn){btn.classList.toggle('selected',btn.dataset.value===value);});
@@ -3741,7 +3741,7 @@ loadIncidentDraft();updateIncidentTimer();setInterval(updateIncidentTimer,1000);
 
   if('caches' in window){
     caches.keys().then(function(keys){
-      return Promise.all(keys.filter(function(key){return key.startsWith('seaworld-chemistry-console-field-service-test-') && key!=='seaworld-chemistry-console-field-service-test-v7';}).map(function(key){return caches.delete(key);}));
+      return Promise.all(keys.filter(function(key){return key.startsWith('seaworld-chemistry-console-field-service-test-') && key!=='seaworld-chemistry-console-field-service-test-v12';}).map(function(key){return caches.delete(key);}));
     }).then(function(){
       setText('versionUpdateStatus','Version 15.11 active • old caches cleared');
     }).catch(function(){
