@@ -1283,7 +1283,7 @@ table{width:100%;border-collapse:collapse}
 .stenner-strategy-box strong{display:block;font-size:13px;color:#d7c4ff}
 .stenner-strategy-box small{display:block;margin-top:5px;color:#93aabc;line-height:1.45}
 </style>
-<link rel="stylesheet" href="field-ui.css">
+<link rel="stylesheet" href="field-ui.css?v=12">
 </head>
 <body>
 <div class="wrap">
@@ -4037,7 +4037,7 @@ function updateChemExisting(){
 
 if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('./service-worker.js?build=v15.11',{updateViaCache:'none'})
+    navigator.serviceWorker.register('./service-worker.js?build=v15.11-nav12',{updateViaCache:'none'})
       .then(function(registration){
         registration.update();
         if(registration.waiting)registration.waiting.postMessage({type:'SKIP_WAITING'});
