@@ -6,3 +6,9 @@ body{padding-bottom:calc(90px + env(safe-area-inset-bottom));font-size:16px}.wra
 .version-panel,.footer{display:none!important}
 
 .test-status{color:#91e5bb;border-color:#266c47;background:#0b281d;font-size:11px;max-width:48%;text-align:right}.pool-context{box-shadow:0 4px 14px #020b18}.field-bottom{box-shadow:0 -4px 18px #020b18}
+
+/* Keep navigation outside the scrolling content, including tall iOS iframes. */
+html{height:100%;overflow:hidden}
+body{height:100vh;height:100dvh;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0}
+body>.wrap{flex:1 1 0;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;margin-top:0!important;margin-bottom:0;padding-bottom:16px}
+body>.field-bottom{position:relative;inset:auto;flex:0 0 auto;width:100%;max-width:900px;align-self:center;transform:none;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
