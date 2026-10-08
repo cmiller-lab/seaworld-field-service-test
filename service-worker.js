@@ -14,6 +14,7 @@ const ASSETS=[
   './lab-api.js',
   './field-ui.js',
   './field-ui.css',
+  './field-ui.css?v=12',
   './inventory.html',
   './inventory.js',
   './inventory.css',
